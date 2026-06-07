@@ -28,7 +28,7 @@ class DrawResultsReady extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your World Cup sweepstake teams are ready',
+            subject: 'Your SweepKit teams are ready',
         );
     }
 

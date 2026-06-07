@@ -3,31 +3,34 @@
 @section('content')
     <section class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
         <div>
-            <p class="text-sm font-semibold uppercase tracking-normal text-red-700">2026 FIFA World Cup</p>
-            <h1 class="mt-3 max-w-3xl text-4xl font-semibold leading-tight text-zinc-950 sm:text-5xl">
-                World Cup Sweepstake App
+            <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">SweepKit for football pools</p>
+            <h1 class="mt-3 max-w-3xl text-4xl font-black leading-tight text-brand-navy sm:text-5xl">
+                Create fair football sweepstakes in minutes.
             </h1>
-            <p class="mt-4 max-w-2xl text-lg leading-8 text-zinc-700">
-                Create a private sweepstake, invite entrants, track payments and run a balanced ranked pot draw.
+            <p class="mt-4 max-w-2xl text-lg leading-8 text-brand-muted">
+                Invite entrants, track paid status and run a balanced ranked pot draw with clear results everyone can trust.
             </p>
             <div class="mt-6 flex flex-wrap gap-3">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">Open dashboard</a>
+                    <a href="{{ route('dashboard') }}" class="sk-btn-green py-2.5">Open dashboard</a>
                 @else
-                    <a href="{{ route('register') }}" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800">Create admin account</a>
-                    <a href="{{ route('login') }}" class="rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-white">Sign in</a>
+                    <a href="{{ route('register') }}" class="sk-btn-green py-2.5">Create admin account</a>
+                    <a href="{{ route('login') }}" class="sk-btn-secondary py-2.5">Sign in</a>
                 @endauth
             </div>
         </div>
 
-        <div class="rounded-lg border border-zinc-200 bg-white p-5">
-            <h2 class="text-base font-semibold">MVP foundation</h2>
-            <ul class="mt-4 space-y-3 text-sm text-zinc-700">
-                <li>Ranked pot draw logic.</li>
-                <li>Admin authentication.</li>
-                <li>Public join link and PIN-style code.</li>
-                <li>Per-sweepstake team selection.</li>
-                <li>Prize and payment tracking.</li>
+        <div class="sk-card overflow-hidden">
+            <div class="bg-gradient-to-br from-brand-navy to-[#0b2d54] p-5 text-white">
+                <p class="text-sm font-semibold text-brand-green">2026 ready</p>
+                <h2 class="mt-2 text-2xl font-bold">Run a fair pot-based draw.</h2>
+                <p class="mt-2 text-sm leading-6 text-white/75">SweepKit keeps the setup tidy for admins and makes results easy for entrants to view.</p>
+            </div>
+            <ul class="space-y-3 p-5 text-sm text-brand-muted">
+                <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-brand-green"></span>Ranked pot draw logic with draw history.</li>
+                <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-brand-blue"></span>Private join links and entrant team pages.</li>
+                <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-brand-green"></span>Payment tracking without payment processing.</li>
+                <li class="flex gap-3"><span class="mt-1 h-2 w-2 rounded-full bg-brand-blue"></span>Email notifications when teams are ready.</li>
             </ul>
         </div>
     </section>

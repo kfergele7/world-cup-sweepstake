@@ -2,23 +2,24 @@
 
 ## Current State
 
-The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation for the World Cup Sweepstake App. The app is scaffolded directly in the repository root, with admin auth, dashboard routes, sweepstake creation, editable sweepstake settings, public joining, cleaned-up manual entrant management, paid/unpaid entrant toggles, bulk per-sweepstake team removal/restoration, prize setup, ranked pot draw execution, draw result emails, controlled draw re-runs, grouped admin draw history and private entrant result pages.
+The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation for SweepKit, a private football sweepstake app. The app is scaffolded directly in the repository root, with admin auth, dashboard routes, sweepstake creation, editable sweepstake settings, public joining, cleaned-up manual entrant management, paid/unpaid entrant toggles, bulk per-sweepstake team removal/restoration, prize setup, ranked pot draw execution, draw result emails, controlled draw re-runs, grouped admin draw history and private entrant result pages.
 
 The ranked pot draw is implemented and covered by automated feature tests. Draws now include all entrants, with paid/unpaid kept as an admin tracking field. Local SQLite has been migrated and seeded.
 
-This pass cleaned up the entrant cards by moving edit/payment/removal controls into a `Manage` disclosure, replaced long private entrant URLs with compact team-page pills, made team list scrolling more obvious, added draw versioning through `sweepstake_draws`, tied assignments to a draw version, sent draw result emails to entrants with email addresses, and added controlled draw re-runs with a required reason. Previous draw assignments are kept as superseded history, and entrants can see their own draw history and re-run reason from the private token page.
+This pass rebranded visible app surfaces to SweepKit, added brand colour tokens and reusable SweepKit UI classes, introduced a text wordmark component, and polished the header, dashboard, admin detail page, entrant cards, team selection, draw results/history, public entrant page, auth pages and empty/status states. The repo and folder names intentionally remain unchanged.
 
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
-- App configuration and ignores: `.env.example`, `.gitignore`, `README.md`.
+- App configuration and ignores: `.env.example`, `.gitignore`, `README.md`, `config/app.php`.
 - Models: `User`, `Sweepstake`, `SweepstakeDraw`, `SweepstakeMember`, `Team`, `SweepstakeTeam`, `TeamAssignment`, `Prize`.
 - Migrations for sweepstakes, draw versions, entrants, entrant source, teams, sweepstake teams, assignments and prizes.
 - Seeders: `DatabaseSeeder`, `TeamSeeder`.
 - Draw logic: `app/Actions/RunRankedPotDraw.php`, `app/Exceptions/DrawException.php`.
 - Mail: `app/Mail/DrawResultsReady.php`, `resources/views/mail/draw-results-ready.blade.php`.
 - Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, entrants, prizes, first draw and reasoned draw re-runs.
-- Basic Blade views plus a small Vue dashboard stats component and lightweight bulk-team selected-count JS.
+- Brand tokens and component classes: `resources/css/app.css`.
+- Basic Blade views plus a small Vue dashboard stats component, text wordmark component and lightweight bulk-team selected-count JS.
 - Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
 
@@ -57,9 +58,10 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - `php artisan route:list`
 - `npm run build`
 - `git diff --check`
+- `php artisan test`
 - `php artisan migrate:fresh --seed`
 - Recreated ignored local dev admin user after fresh migration: `kyle@elementseven.co`.
-- Browser smoke test at `http://127.0.0.1:8001`: landing page renders, registration form works, dashboard renders, Vue stats mount, page title is `World Cup Sweepstake`.
+- Browser smoke test at `http://127.0.0.1:8001`: landing page renders, registration form works, dashboard renders and Vue stats mount; current branding is SweepKit.
 - Attempted authenticated browser smoke test for the entrant UI; the in-app Browser loaded the app but text entry was blocked by a missing virtual clipboard in the browser plugin. Authenticated flows are covered by Laravel feature tests.
 - Attempted to discover the in-app Browser control tool for this pass, but it was not exposed in this thread. Browser-level verification was limited to automated Laravel feature tests and `npm run build`.
 
@@ -73,6 +75,7 @@ Current passing test result: 42 tests, 205 assertions.
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.
 - Team seed rankings are a working April 2026 dataset and should be refreshed from FIFA before production launch.
 - The admin settings, team selection and entrant UI are usable but still basic; dedicated edit pages/modals, search or select-all helpers may be nicer later.
+- The final logo asset has not been chosen yet; the header uses a text wordmark placeholder component.
 
 ## Recommended Next Steps
 
@@ -81,7 +84,8 @@ Current passing test result: 42 tests, 205 assertions.
 3. Add richer admin management for team search, select all/none, copy-link affordances and wider tournament configuration.
 4. Consider extracting policies or form request classes once route/controller surface grows further.
 5. Add browser-level feature tests for the main admin, bulk team, re-run and entrant result flows.
-6. Refresh team rankings and group metadata from an authoritative source before launch.
+6. Add the final SweepKit logo asset and favicon once the brand mark is chosen.
+7. Refresh team rankings and group metadata from an authoritative source before launch.
 
 ## Local browser check
 

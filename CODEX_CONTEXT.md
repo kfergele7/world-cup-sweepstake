@@ -1,8 +1,8 @@
-# World Cup Sweepstake App Codex Context
+# SweepKit Codex Context
 
 ## Product Overview
 
-World Cup Sweepstake App lets an admin create and manage a private 2026 FIFA World Cup sweepstake.
+SweepKit lets an admin create and manage a private 2026 FIFA World Cup sweepstake.
 
 Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, set prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw or reasoned re-run is completed.
 
@@ -14,6 +14,14 @@ Admins can create a sweepstake, share a private join link or PIN-style code, tra
 - Tailwind CSS 4
 - SQLite locally by default
 - PHPUnit for tests
+
+## Brand Direction
+
+- Product name: SweepKit.
+- Repo/folder name remains `world-cup-sweepstake` for now.
+- Header currently uses a text wordmark component at `resources/views/components/wordmark.blade.php` so it can be replaced with a final logo later.
+- Core brand colours are deep navy (`#06152D`), pitch green (`#16B84E`), electric blue (`#1687E8`), soft off-white backgrounds and light grey borders.
+- UI should feel like a clean, trustworthy sports SaaS product, not a betting site.
 
 ## Core Draw Logic
 

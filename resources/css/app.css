@@ -8,4 +8,79 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-brand-navy: #06152d;
+    --color-brand-green: #16b84e;
+    --color-brand-blue: #1687e8;
+    --color-brand-soft: #f6f9fb;
+    --color-brand-card: #ffffff;
+    --color-brand-border: #dfe7ee;
+    --color-brand-muted: #617084;
+    --color-brand-amber: #b7791f;
+    --color-brand-danger: #b42318;
+}
+
+@layer components {
+    .sk-shell {
+        @apply bg-brand-soft text-brand-navy antialiased;
+    }
+
+    .sk-card {
+        @apply rounded-lg border border-brand-border bg-brand-card shadow-sm shadow-brand-navy/5;
+    }
+
+    .sk-card-header {
+        @apply border-b border-brand-border px-5 py-4;
+    }
+
+    .sk-muted {
+        @apply text-brand-muted;
+    }
+
+    .sk-input {
+        @apply mt-1 w-full rounded-lg border border-brand-border bg-white px-3 py-2 text-sm text-brand-navy outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15;
+    }
+
+    .sk-btn-primary {
+        @apply rounded-lg bg-brand-navy px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-navy/15 transition hover:bg-[#0b2142] disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .sk-btn-green {
+        @apply rounded-lg bg-brand-green px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-green/20 transition hover:bg-[#119640] disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .sk-btn-secondary {
+        @apply rounded-lg border border-brand-border bg-white px-4 py-2 text-sm font-semibold text-brand-navy transition hover:border-brand-blue/40 hover:bg-brand-blue/5 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .sk-btn-pill {
+        @apply rounded-full border border-brand-border bg-white px-3 py-1.5 text-sm font-medium text-brand-navy transition hover:border-brand-blue/40 hover:bg-brand-blue/5;
+    }
+
+    .sk-btn-danger {
+        @apply rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-brand-danger transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .sk-badge {
+        @apply rounded-full border px-2.5 py-1 text-xs font-semibold;
+    }
+
+    .sk-badge-green {
+        @apply border-green-200 bg-green-50 text-green-800;
+    }
+
+    .sk-badge-blue {
+        @apply border-blue-200 bg-blue-50 text-blue-800;
+    }
+
+    .sk-badge-amber {
+        @apply border-amber-200 bg-amber-50 text-amber-800;
+    }
+
+    .sk-badge-navy {
+        @apply border-brand-navy/15 bg-brand-navy/5 text-brand-navy;
+    }
+
+    .sk-badge-neutral {
+        @apply border-brand-border bg-brand-soft text-brand-muted;
+    }
 }

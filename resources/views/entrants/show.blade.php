@@ -2,37 +2,37 @@
 
 @section('content')
     <section class="max-w-2xl">
-        <p class="text-sm font-semibold uppercase tracking-normal text-red-700">{{ ucfirst($sweepstake->status) }}</p>
-        <h1 class="mt-2 text-3xl font-semibold">{{ $sweepstake->name }}</h1>
-        <p class="mt-3 text-zinc-700">Hi {{ $member->name }}. Paid status is managed by the sweepstake admin.</p>
+        <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">{{ ucfirst($sweepstake->status) }}</p>
+        <h1 class="mt-2 text-3xl font-black text-brand-navy">{{ $sweepstake->name }}</h1>
+        <p class="mt-3 text-brand-muted">Hi {{ $member->name }}. Paid status is just for the sweepstake admin's own tracking.</p>
 
-        <div class="mt-6 rounded-lg border border-zinc-200 bg-white">
-            <div class="border-b border-zinc-200 px-5 py-4">
-                <h2 class="font-semibold">Assigned teams</h2>
+        <div class="sk-card mt-6 overflow-hidden">
+            <div class="sk-card-header bg-gradient-to-r from-brand-navy to-[#0b2d54] text-white">
+                <h2 class="font-semibold">{{ $activeDraw ? 'Your teams are ready' : "You're entered" }}</h2>
                 @if ($activeDraw)
-                    <p class="mt-1 text-sm text-zinc-600">Active draw #{{ $activeDraw->version_number }}</p>
+                    <p class="mt-1 text-sm text-white/70">Active draw #{{ $activeDraw->version_number }}</p>
                 @endif
             </div>
 
             @if ($assignments->isEmpty())
-                <div class="px-5 py-4 text-sm text-zinc-600">
-                    <p class="font-medium text-zinc-800">You're entered. Your teams will appear here after the draw.</p>
+                <div class="px-5 py-4 text-sm text-brand-muted">
+                    <p class="font-semibold text-brand-navy">You're entered. Your teams will appear here after the draw.</p>
                     <p class="mt-1">Keep this private link safe so you can come back after the admin runs the draw.</p>
                 </div>
             @else
-                <ul class="divide-y divide-zinc-100">
+                <ul class="grid gap-3 p-5 sm:grid-cols-2">
                     @foreach ($assignments as $assignment)
-                        <li class="px-5 py-4 text-sm">
+                        <li class="rounded-lg border border-brand-border bg-brand-soft px-4 py-3 text-sm">
                             <div class="flex items-center justify-between gap-3">
-                                <span class="font-medium">
+                                <span class="font-semibold text-brand-navy">
                                     @if ($assignment->team->flag)
                                         <span aria-hidden="true">{{ $assignment->team->flag }}</span>
                                     @endif
                                     {{ $assignment->team->name }}
                                 </span>
-                                <span class="text-zinc-600">Pot {{ $assignment->pot_number ?? 'n/a' }}</span>
+                                <span class="sk-badge sk-badge-blue">Pot {{ $assignment->pot_number ?? 'n/a' }}</span>
                             </div>
-                            <p class="mt-1 text-xs text-zinc-600">Ranking {{ $assignment->team->fifa_ranking ?? 'n/a' }}</p>
+                            <p class="mt-2 text-xs text-brand-muted">Ranking {{ $assignment->team->fifa_ranking ?? 'n/a' }}</p>
                         </li>
                     @endforeach
                 </ul>
@@ -40,27 +40,28 @@
         </div>
 
         @if ($draws->isNotEmpty())
-            <div class="mt-6 rounded-lg border border-zinc-200 bg-white">
-                <div class="border-b border-zinc-200 px-5 py-4">
-                    <h2 class="font-semibold">Draw history</h2>
+            <div class="sk-card mt-6">
+                <div class="sk-card-header">
+                    <h2 class="font-semibold text-brand-navy">Draw history</h2>
+                    <p class="mt-1 text-sm text-brand-muted">You can see when your draw changed and why.</p>
                 </div>
 
-                <div class="divide-y divide-zinc-100">
+                <div class="divide-y divide-brand-border/70">
                     @foreach ($draws as $draw)
                         <div class="px-5 py-4 text-sm">
                             <div class="flex flex-wrap items-center justify-between gap-3">
-                                <p class="font-medium">Draw #{{ $draw->version_number }} — run on {{ $draw->ran_at->format('j M Y \a\t H:i') }}</p>
-                                <span class="rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-700">
+                                <p class="font-semibold text-brand-navy">Draw #{{ $draw->version_number }} — run on {{ $draw->ran_at->format('j M Y \a\t H:i') }}</p>
+                                <span class="sk-badge {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'sk-badge-green' : 'sk-badge-neutral' }}">
                                     {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'Active draw' : 'Superseded' }}
                                 </span>
                             </div>
 
                             @if ($draw->reason)
-                                <p class="mt-2 text-zinc-600">Reason: {{ $draw->reason }}</p>
+                                <p class="mt-2 text-brand-muted">Reason: {{ $draw->reason }}</p>
                             @endif
 
                             @if ($draw->assignments->isNotEmpty())
-                                <p class="mt-2 text-zinc-600">
+                                <p class="mt-2 text-brand-muted">
                                     Your teams:
                                     {{ $draw->assignments
                                         ->sortBy(fn ($assignment) => sprintf('%03d-%08d', $assignment->pot_number ?? 0, $assignment->id))

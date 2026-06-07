@@ -120,7 +120,7 @@ class SweepstakeResultsTest extends TestCase
 
         $this->get(route('entrants.show', $alice->join_token))
             ->assertOk()
-            ->assertSee('Assigned teams')
+            ->assertSee('Your teams are ready')
             ->assertSee('Active draw #1')
             ->assertSee('Team 1')
             ->assertSee('Pot 1')
