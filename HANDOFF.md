@@ -64,3 +64,7 @@ Current passing test result: 7 tests, 32 assertions.
 4. Add policies or form request classes once route/controller surface grows.
 5. Add browser-level feature tests for the main admin and join flows.
 6. Refresh team rankings and group metadata from an authoritative source before launch.
+
+## Local browser check
+
+Kyle confirmed the app is running locally at http://127.0.0.1:8001 before the next hardening task.
