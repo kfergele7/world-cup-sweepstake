@@ -16,7 +16,7 @@
                         <span>
                             <span class="block font-medium">{{ $sweepstake->name }}</span>
                             <span class="mt-1 block text-sm text-zinc-600">
-                                {{ $sweepstake->members_count }} members, {{ $sweepstake->paid_members_count }} paid
+                                {{ $sweepstake->members_count }} entrants, {{ $sweepstake->paid_members_count }} paid
                             </span>
                         </span>
                         <span class="text-sm font-medium text-zinc-700">{{ ucfirst($sweepstake->status) }}</span>

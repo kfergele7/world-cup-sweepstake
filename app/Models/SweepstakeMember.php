@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'email',
     'join_token',
+    'source',
     'is_admin',
     'is_paid',
     'paid_at',
@@ -20,6 +21,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SweepstakeMember extends Model
 {
     use HasFactory;
+
+    public const SOURCE_MANUAL = 'manual';
+
+    public const SOURCE_JOIN_LINK = 'join_link';
+
+    public const SOURCE_PIN = 'pin';
 
     protected function casts(): array
     {
@@ -38,5 +45,14 @@ class SweepstakeMember extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(TeamAssignment::class);
+    }
+
+    public function sourceLabel(): string
+    {
+        return match ($this->source) {
+            self::SOURCE_MANUAL => 'Added manually',
+            self::SOURCE_PIN => 'Joined by PIN',
+            default => 'Joined by link',
+        };
     }
 }

@@ -12,7 +12,7 @@
 
                 <form method="POST" action="{{ route('sweepstakes.draw.store', $sweepstake) }}">
                     @csrf
-                    <button class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800" @disabled($sweepstake->isLockedForChanges())>Run draw</button>
+                    <button class="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800" @disabled($sweepstake->isLockedForChanges())>Run ranked pot draw</button>
                 </form>
             </div>
 
@@ -24,27 +24,78 @@
 
             <div class="mt-8 rounded-lg border border-zinc-200 bg-white">
                 <div class="border-b border-zinc-200 px-5 py-4">
-                    <h2 class="font-semibold">Members</h2>
+                    <h2 class="font-semibold">Entrants</h2>
+                    <p class="mt-1 text-sm text-zinc-600">All entrants are included in the draw. Paid status is for admin tracking only.</p>
                 </div>
+
+                <form method="POST" action="{{ route('sweepstakes.members.store', $sweepstake) }}" class="grid gap-3 border-b border-zinc-200 bg-zinc-50 px-5 py-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
+                    @csrf
+                    <label>
+                        <span class="text-sm font-medium text-zinc-700">Name</span>
+                        <input name="name" value="{{ old('name') }}" required class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                    </label>
+                    <label>
+                        <span class="text-sm font-medium text-zinc-700">Email</span>
+                        <input type="email" name="email" value="{{ old('email') }}" class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                    </label>
+                    <label class="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700">
+                        <input type="checkbox" name="is_paid" value="1" class="rounded border-zinc-300" @checked(old('is_paid')) @disabled($sweepstake->isLockedForChanges())>
+                        Paid
+                    </label>
+                    <button class="rounded-lg bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800" @disabled($sweepstake->isLockedForChanges())>Add entrant</button>
+                    <p class="lg:col-span-4 text-sm text-zinc-600">You can add people manually if they do not want to use the join link.</p>
+                </form>
 
                 <div class="divide-y divide-zinc-100">
                     @forelse ($sweepstake->members as $member)
-                        <div class="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                        <div class="grid gap-4 px-5 py-4">
                             <div>
-                                <p class="font-medium">{{ $member->name }} @if ($member->is_admin)<span class="text-sm text-zinc-500">(admin)</span>@endif</p>
-                                <p class="text-sm text-zinc-600">{{ $member->email ?: 'No email' }}</p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="font-medium">{{ $member->name }}</p>
+                                    <span class="rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-700">{{ $member->is_paid ? 'Paid' : 'Not paid yet' }}</span>
+                                    <span class="rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-700">{{ $member->sourceLabel() }}</span>
+                                </div>
+                                <p class="mt-1 text-sm text-zinc-600">
+                                    {{ $member->email ?: 'No email' }} · Joined {{ $member->created_at->format('j M Y') }}
+                                </p>
                             </div>
-                            <form method="POST" action="{{ route('sweepstakes.members.update', [$sweepstake, $member]) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="is_paid" value="{{ $member->is_paid ? 0 : 1 }}">
-                                <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50" @disabled($sweepstake->isLockedForChanges())>
-                                    {{ $member->is_paid ? 'Mark unpaid' : 'Mark paid' }}
-                                </button>
-                            </form>
+
+                            <div class="grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-end">
+                                <form id="member-edit-{{ $member->id }}" method="POST" action="{{ route('sweepstakes.members.update', [$sweepstake, $member]) }}" class="grid gap-3 sm:grid-cols-2">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label>
+                                        <span class="text-sm font-medium text-zinc-700">Name</span>
+                                        <input name="name" value="{{ old('name', $member->name) }}" required class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                                    </label>
+                                    <label>
+                                        <span class="text-sm font-medium text-zinc-700">Email</span>
+                                        <input type="email" name="email" value="{{ old('email', $member->email) }}" class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                                    </label>
+                                </form>
+
+                                <button form="member-edit-{{ $member->id }}" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50" @disabled($sweepstake->isLockedForChanges())>Save entrant</button>
+
+                                <div class="flex flex-wrap gap-2">
+                                    <form method="POST" action="{{ route('sweepstakes.members.payment.update', [$sweepstake, $member]) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="is_paid" value="{{ $member->is_paid ? 0 : 1 }}">
+                                        <button class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50" @disabled($sweepstake->isLockedForChanges())>
+                                            {{ $member->is_paid ? 'Mark as unpaid' : 'Mark as paid' }}
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('sweepstakes.members.destroy', [$sweepstake, $member]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50" @disabled($sweepstake->isLockedForChanges())>Remove entrant</button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     @empty
-                        <p class="px-5 py-4 text-sm text-zinc-600">No members yet.</p>
+                        <p class="px-5 py-4 text-sm text-zinc-600">No entrants yet.</p>
                     @endforelse
                 </div>
             </div>
@@ -115,15 +166,23 @@
                         <dd class="font-medium">{{ $sweepstake->currency }} {{ number_format((float) $sweepstake->entry_fee, 2) }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-600">Paid pot</dt>
+                        <dt class="text-zinc-600">Collected pot</dt>
                         <dd class="font-medium">{{ $sweepstake->currency }} {{ number_format($sweepstake->collectedPot(), 2) }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-600">Entrants in draw</dt>
+                        <dd class="font-medium">{{ $sweepstake->members->count() }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-zinc-600">Paid entrants</dt>
+                        <dd class="font-medium">{{ $sweepstake->members->where('is_paid', true)->count() }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
                         <dt class="text-zinc-600">Draw mode</dt>
                         <dd class="font-medium">Ranked pots</dd>
                     </div>
                     <div class="flex justify-between gap-4">
-                        <dt class="text-zinc-600">Teams per member</dt>
+                        <dt class="text-zinc-600">Teams per entrant</dt>
                         <dd class="font-medium">{{ $sweepstake->teams_per_member ?? 'Not drawn' }}</dd>
                     </div>
                 </dl>

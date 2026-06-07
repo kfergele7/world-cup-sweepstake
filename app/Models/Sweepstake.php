@@ -63,6 +63,11 @@ class Sweepstake extends Model
         return $this->members()->where('is_paid', true);
     }
 
+    public function entrants(): HasMany
+    {
+        return $this->members();
+    }
+
     public function sweepstakeTeams(): HasMany
     {
         return $this->hasMany(SweepstakeTeam::class);

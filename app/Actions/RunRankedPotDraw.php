@@ -28,25 +28,25 @@ class RunRankedPotDraw
      */
     public function buildPlan(Sweepstake $sweepstake): array
     {
-        $members = $sweepstake->paidMembers()
+        $members = $sweepstake->entrants()
             ->orderBy('id')
             ->get();
 
         if ($members->count() < 2) {
-            throw new DrawException('At least two paid members are required before running the draw.');
+            throw new DrawException('Add at least two entrants before running the draw.');
         }
 
         $selectedTeams = $this->rankedSelectedTeams($sweepstake);
         $memberCount = $members->count();
 
         if ($selectedTeams->count() < $memberCount) {
-            throw new DrawException('There are not enough selected teams for the number of paid members.');
+            throw new DrawException('There are not enough selected teams for the number of entrants.');
         }
 
         $teamsPerMember = intdiv($selectedTeams->count(), $memberCount);
 
         if ($teamsPerMember < 1) {
-            throw new DrawException('Each paid member must receive at least one team.');
+            throw new DrawException('Each entrant must receive at least one team.');
         }
 
         $usableTeamCount = $teamsPerMember * $memberCount;

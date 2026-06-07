@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sweepstake;
-use App\Models\SweepstakeMember;
 use App\Models\SweepstakeTeam;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
@@ -35,14 +34,6 @@ class SweepstakeController extends Controller
                 'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
             ]);
 
-            SweepstakeMember::create([
-                'sweepstake_id' => $sweepstake->id,
-                'name' => $request->user()->name,
-                'email' => $request->user()->email,
-                'join_token' => Str::random(40),
-                'is_admin' => true,
-            ]);
-
             Team::query()
                 ->where('qualified_for_2026', true)
                 ->orderBy('fifa_ranking')
@@ -66,7 +57,7 @@ class SweepstakeController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         $sweepstake->load([
-            'members' => fn ($query) => $query->orderByDesc('is_admin')->orderBy('name'),
+            'members' => fn ($query) => $query->orderBy('created_at')->orderBy('id'),
             'sweepstakeTeams.team',
             'assignments.member',
             'assignments.team',

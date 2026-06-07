@@ -35,9 +35,9 @@ class RunRankedPotDrawTest extends TestCase
         $this->assertSame(range(43, 48), $plan['leftover_teams']->map(fn (SweepstakeTeam $team) => $team->team->fifa_ranking)->all());
     }
 
-    public function test_it_assigns_one_team_from_each_pot_to_every_paid_member(): void
+    public function test_it_assigns_one_team_from_each_pot_to_every_entrant(): void
     {
-        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 10);
+        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 10, paidMemberCount: 1);
 
         $assignments = app(RunRankedPotDraw::class)->handle($sweepstake);
         $sweepstake->refresh();
@@ -48,7 +48,7 @@ class RunRankedPotDrawTest extends TestCase
         $this->assertNotNull($sweepstake->drawn_at);
         $this->assertDatabaseCount('team_assignments', 9);
 
-        $sweepstake->paidMembers->each(function (SweepstakeMember $member): void {
+        $sweepstake->members->each(function (SweepstakeMember $member): void {
             $this->assertSame(3, $member->assignments()->count());
         });
 
@@ -67,12 +67,12 @@ class RunRankedPotDrawTest extends TestCase
         ]);
     }
 
-    public function test_it_rejects_draws_with_fewer_than_two_paid_members(): void
+    public function test_it_rejects_draws_with_fewer_than_two_entrants(): void
     {
         $sweepstake = $this->createSweepstake(memberCount: 1, teamCount: 4);
 
         $this->expectException(DrawException::class);
-        $this->expectExceptionMessage('At least two paid members are required');
+        $this->expectExceptionMessage('Add at least two entrants');
 
         app(RunRankedPotDraw::class)->handle($sweepstake);
     }
@@ -100,7 +100,70 @@ class RunRankedPotDrawTest extends TestCase
         $draw->handle($sweepstake->fresh());
     }
 
-    private function createSweepstake(int $memberCount, int $teamCount): Sweepstake
+    public function test_it_does_not_assign_removed_teams(): void
+    {
+        $sweepstake = $this->createSweepstake(memberCount: 2, teamCount: 5);
+
+        $removedTeam = $sweepstake->sweepstakeTeams()
+            ->whereHas('team', fn ($query) => $query->where('fifa_ranking', 1))
+            ->firstOrFail();
+
+        $removedTeam->update([
+            'is_included' => false,
+            'is_removed' => true,
+            'removed_reason' => 'Removed by admin',
+        ]);
+
+        app(RunRankedPotDraw::class)->handle($sweepstake);
+
+        $this->assertDatabaseMissing('team_assignments', [
+            'sweepstake_id' => $sweepstake->id,
+            'team_id' => $removedTeam->team_id,
+        ]);
+
+        $this->assertSame(4, TeamAssignment::where('sweepstake_id', $sweepstake->id)->count());
+    }
+
+    public function test_manual_and_link_joined_entrants_are_drawn_the_same_way(): void
+    {
+        $sweepstake = $this->createSweepstake(memberCount: 0, teamCount: 6);
+
+        SweepstakeMember::create([
+            'sweepstake_id' => $sweepstake->id,
+            'name' => 'Manual paid',
+            'email' => 'manual-paid@example.test',
+            'join_token' => 'manual-paid-token',
+            'source' => SweepstakeMember::SOURCE_MANUAL,
+            'is_paid' => true,
+            'paid_at' => now(),
+        ]);
+
+        SweepstakeMember::create([
+            'sweepstake_id' => $sweepstake->id,
+            'name' => 'Manual unpaid',
+            'email' => 'manual-unpaid@example.test',
+            'join_token' => 'manual-unpaid-token',
+            'source' => SweepstakeMember::SOURCE_MANUAL,
+            'is_paid' => false,
+        ]);
+
+        SweepstakeMember::create([
+            'sweepstake_id' => $sweepstake->id,
+            'name' => 'Link unpaid',
+            'email' => 'link-unpaid@example.test',
+            'join_token' => 'link-unpaid-token',
+            'source' => SweepstakeMember::SOURCE_JOIN_LINK,
+            'is_paid' => false,
+        ]);
+
+        app(RunRankedPotDraw::class)->handle($sweepstake);
+
+        $sweepstake->members->each(function (SweepstakeMember $member): void {
+            $this->assertSame(2, $member->assignments()->count());
+        });
+    }
+
+    private function createSweepstake(int $memberCount, int $teamCount, ?int $paidMemberCount = null): Sweepstake
     {
         $user = User::create([
             'name' => 'Admin',
@@ -118,15 +181,20 @@ class RunRankedPotDrawTest extends TestCase
             'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
         ]);
 
-        foreach (range(1, $memberCount) as $index) {
-            SweepstakeMember::create([
-                'sweepstake_id' => $sweepstake->id,
-                'name' => "Member {$index}",
-                'email' => "member{$index}@example.test",
-                'join_token' => "token-{$sweepstake->id}-{$index}",
-                'is_paid' => true,
-                'paid_at' => now(),
-            ]);
+        $paidMemberCount ??= $memberCount;
+
+        if ($memberCount > 0) {
+            foreach (range(1, $memberCount) as $index) {
+                SweepstakeMember::create([
+                    'sweepstake_id' => $sweepstake->id,
+                    'name' => "Member {$index}",
+                    'email' => "member{$index}@example.test",
+                    'join_token' => "token-{$sweepstake->id}-{$index}",
+                    'source' => $index % 2 === 0 ? SweepstakeMember::SOURCE_JOIN_LINK : SweepstakeMember::SOURCE_MANUAL,
+                    'is_paid' => $index <= $paidMemberCount,
+                    'paid_at' => $index <= $paidMemberCount ? now() : null,
+                ]);
+            }
         }
 
         foreach (range(1, $teamCount) as $index) {
