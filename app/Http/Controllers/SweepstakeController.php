@@ -58,10 +58,11 @@ class SweepstakeController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         $sweepstake->load([
-            'members' => fn ($query) => $query->orderBy('created_at')->orderBy('id'),
+            'members' => fn ($query) => $query
+                ->with('assignments.team')
+                ->orderBy('created_at')
+                ->orderBy('id'),
             'sweepstakeTeams.team',
-            'assignments.member',
-            'assignments.team',
             'prizes',
         ]);
 
@@ -81,7 +82,19 @@ class SweepstakeController extends Controller
         return view('sweepstakes.show', [
             'sweepstake' => $sweepstake,
             'selectedTeams' => $selectedTeams,
-            'removedTeams' => $sweepstake->sweepstakeTeams->where('is_removed', true)->values(),
+            'removedTeams' => $sweepstake->sweepstakeTeams
+                ->where('is_removed', true)
+                ->sort(function (SweepstakeTeam $first, SweepstakeTeam $second): int {
+                    return [
+                        $first->team->fifa_ranking ?? PHP_INT_MAX,
+                        $first->team->name,
+                    ] <=> [
+                        $second->team->fifa_ranking ?? PHP_INT_MAX,
+                        $second->team->name,
+                    ];
+                })
+                ->values(),
+            'drawAssignmentCount' => $sweepstake->members->sum(fn ($member): int => $member->assignments->count()),
             'prizeWarning' => $this->prizeWarning($sweepstake),
         ]);
     }

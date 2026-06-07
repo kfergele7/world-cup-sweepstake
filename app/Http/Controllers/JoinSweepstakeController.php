@@ -51,7 +51,7 @@ class JoinSweepstakeController extends Controller
             'source' => SweepstakeMember::SOURCE_JOIN_LINK,
         ]);
 
-        return redirect()->route('join.show', $sweepstake->join_code)
-            ->with('status', "Thanks {$member->name}. The admin can now mark you as paid.");
+        return redirect()->route('entrants.show', $member->join_token)
+            ->with('status', "Thanks {$member->name}. You are entered in the sweepstake.");
     }
 }

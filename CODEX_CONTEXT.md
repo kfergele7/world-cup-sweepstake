@@ -4,7 +4,7 @@
 
 World Cup Sweepstake App lets an admin create and manage a private 2026 FIFA World Cup sweepstake.
 
-Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, set prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP.
+Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, set prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw.
 
 ## Stack
 
@@ -61,7 +61,8 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Do not allow a second draw without an explicit reset flow.
 - After a draw, lock sweepstake settings, entrant adds, edits, removals, payment changes, team selection and prize changes.
 - Warn when prize payouts exceed the collected paid-entry pot.
-- Team removal must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
+- Team removal and restoration must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
+- Public entrant result pages must use `join_token`, not incremental entrant IDs, and must not expose entrant emails or admin-only controls.
 
 ## Admin Journey
 
@@ -71,17 +72,18 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 4. Share the join link or join code.
 5. Review joined entrants, add offline entrants manually and mark paid entrants.
 6. Remove entrants before the draw if needed.
-7. Remove or restore teams for that sweepstake.
+7. Bulk remove or restore teams for that sweepstake.
 8. Add prize payouts.
 9. Run the ranked pot draw.
-10. Review persisted assignments.
+10. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
 
 ## Entrant Journey
 
 1. Open the public join link.
 2. Enter name and optional email.
-3. Wait for the admin to mark payment as received.
-4. After the draw, view assigned teams in a later entrant-facing results flow.
+3. Land on a private entrant page backed by their `join_token`.
+4. Before the draw, see a waiting message.
+5. After the draw, view only their own assigned teams from the same private link.
 
 ## Codex Workflow Expectations
 

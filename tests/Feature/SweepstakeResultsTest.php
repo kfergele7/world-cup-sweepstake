@@ -1,0 +1,231 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Sweepstake;
+use App\Models\SweepstakeMember;
+use App\Models\SweepstakeTeam;
+use App\Models\Team;
+use App\Models\TeamAssignment;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SweepstakeResultsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_owning_admin_can_view_grouped_draw_results_after_the_draw(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 4);
+        $alice = $this->createMember($sweepstake, 'Alice Adams', isPaid: true);
+        $bob = $this->createMember($sweepstake, 'Bob Brown', source: SweepstakeMember::SOURCE_JOIN_LINK);
+        $teams = Team::orderBy('id')->get();
+
+        $this->drawSweepstake($sweepstake, [
+            [$alice, $teams[0], 1],
+            [$bob, $teams[1], 1],
+            [$alice, $teams[2], 2],
+            [$bob, $teams[3], 2],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('Draw results')
+            ->assertSee('Assigned teams grouped by entrant.')
+            ->assertSee('Alice Adams has 2 teams')
+            ->assertSee('Bob Brown has 2 teams')
+            ->assertSee('Team 1')
+            ->assertSee('Pot 1')
+            ->assertSee('Paid')
+            ->assertSee('Joined by link');
+    }
+
+    public function test_another_admin_cannot_view_someone_elses_admin_results(): void
+    {
+        $owner = $this->createUser('owner@example.test');
+        $otherAdmin = $this->createUser('other@example.test');
+        $sweepstake = $this->createSweepstake($owner, teamCount: 2);
+
+        $this->actingAs($otherAdmin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertForbidden();
+    }
+
+    public function test_admin_page_shows_setup_guidance_before_the_draw(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $this->createMember($sweepstake, 'Alice Adams');
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('The draw has not been run yet.')
+            ->assertSee('Run the draw to assign teams to entrants.')
+            ->assertDontSee('Alice Adams has 1 team');
+    }
+
+    public function test_admin_can_copy_a_private_view_link_for_a_manual_entrant(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $member = $this->createMember($sweepstake, 'Manual Entrant', token: 'manual-private-token');
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('Private teams link')
+            ->assertSee(route('entrants.show', $member->join_token));
+    }
+
+    public function test_link_joined_entrant_can_view_their_private_waiting_page_by_secure_token(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $member = $this->createMember(
+            $sweepstake,
+            'Link Entrant',
+            email: 'link@example.test',
+            token: 'link-private-token',
+            source: SweepstakeMember::SOURCE_JOIN_LINK,
+        );
+
+        $this->get(route('entrants.show', $member->join_token))
+            ->assertOk()
+            ->assertSee($sweepstake->name)
+            ->assertSee('Link Entrant')
+            ->assertSeeText("You're entered. Your teams will appear here after the draw.")
+            ->assertDontSee('link@example.test')
+            ->assertDontSee('Run ranked pot draw');
+    }
+
+    public function test_entrant_private_page_shows_only_their_own_assigned_teams_after_the_draw(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $alice = $this->createMember($sweepstake, 'Alice Adams', email: 'alice@example.test', token: 'alice-token');
+        $bob = $this->createMember($sweepstake, 'Bob Brown', email: 'bob@example.test', token: 'bob-token');
+        $teams = Team::orderBy('id')->get();
+
+        $this->drawSweepstake($sweepstake, [
+            [$alice, $teams[0], 1],
+            [$bob, $teams[1], 1],
+        ]);
+
+        $this->get(route('entrants.show', $alice->join_token))
+            ->assertOk()
+            ->assertSee('Assigned teams')
+            ->assertSee('Team 1')
+            ->assertSee('Pot 1')
+            ->assertDontSee('Team 2')
+            ->assertDontSee('alice@example.test')
+            ->assertDontSee('bob@example.test')
+            ->assertDontSee('Run ranked pot draw')
+            ->assertDontSee('Private entrant view');
+    }
+
+    public function test_unknown_entrant_token_returns_not_found(): void
+    {
+        $this->get(route('entrants.show', 'unknown-token'))->assertNotFound();
+    }
+
+    public function test_manually_added_entrant_can_use_their_private_view_token(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $member = $this->createMember($sweepstake, 'Manual Entrant', token: 'manual-token');
+
+        $this->get(route('entrants.show', $member->join_token))
+            ->assertOk()
+            ->assertSee('Manual Entrant')
+            ->assertSeeText("You're entered. Your teams will appear here after the draw.");
+    }
+
+    private function createUser(string $email): User
+    {
+        return User::create([
+            'name' => 'Admin',
+            'email' => $email,
+            'password' => 'password',
+        ]);
+    }
+
+    private function createSweepstake(User $admin, int $teamCount): Sweepstake
+    {
+        $sweepstake = Sweepstake::create([
+            'user_id' => $admin->id,
+            'name' => 'Office Sweepstake',
+            'slug' => 'office-'.uniqid(),
+            'join_code' => strtoupper(substr(uniqid(), -8)),
+            'status' => Sweepstake::STATUS_OPEN,
+            'draw_mode' => Sweepstake::DRAW_MODE_RANKED_POTS,
+            'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
+        ]);
+
+        foreach (range(1, $teamCount) as $index) {
+            $team = Team::create([
+                'name' => "Team {$index}",
+                'country_code' => sprintf('R%02d', $index),
+                'flag' => "Flag {$index}",
+                'fifa_ranking' => $index,
+                'qualified_for_2026' => true,
+            ]);
+
+            SweepstakeTeam::create([
+                'sweepstake_id' => $sweepstake->id,
+                'team_id' => $team->id,
+                'sort_order' => $index,
+            ]);
+        }
+
+        return $sweepstake;
+    }
+
+    private function createMember(
+        Sweepstake $sweepstake,
+        string $name,
+        ?string $email = null,
+        ?string $token = null,
+        string $source = SweepstakeMember::SOURCE_MANUAL,
+        bool $isPaid = false,
+    ): SweepstakeMember {
+        return SweepstakeMember::create([
+            'sweepstake_id' => $sweepstake->id,
+            'name' => $name,
+            'email' => $email ?? str($name)->slug()->append('@example.test')->toString(),
+            'join_token' => $token ?? 'token-'.uniqid(),
+            'source' => $source,
+            'is_paid' => $isPaid,
+            'paid_at' => $isPaid ? now() : null,
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{0: SweepstakeMember, 1: Team, 2: int}>  $assignments
+     */
+    private function drawSweepstake(Sweepstake $sweepstake, array $assignments): void
+    {
+        $assignedAt = now();
+
+        foreach ($assignments as [$member, $team, $potNumber]) {
+            TeamAssignment::create([
+                'sweepstake_id' => $sweepstake->id,
+                'sweepstake_member_id' => $member->id,
+                'team_id' => $team->id,
+                'pot_number' => $potNumber,
+                'assigned_at' => $assignedAt,
+            ]);
+        }
+
+        $sweepstake->forceFill([
+            'status' => Sweepstake::STATUS_DRAWN,
+            'teams_per_member' => collect($assignments)
+                ->groupBy(fn (array $assignment): int => $assignment[0]->id)
+                ->max(fn ($memberAssignments): int => $memberAssignments->count()),
+            'drawn_at' => $assignedAt,
+        ])->save();
+    }
+}

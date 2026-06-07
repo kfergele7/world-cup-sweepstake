@@ -103,10 +103,10 @@ class SweepstakeMemberManagementTest extends TestCase
         $admin = $this->createUser('admin@example.test');
         $sweepstake = $this->createSweepstake($admin);
 
-        $this->post(route('join.store', $sweepstake->join_code), [
+        $response = $this->post(route('join.store', $sweepstake->join_code), [
             'name' => 'Link Entrant',
             'email' => 'link@example.test',
-        ])->assertRedirect(route('join.show', $sweepstake->join_code));
+        ]);
 
         $this->assertDatabaseHas('sweepstake_members', [
             'sweepstake_id' => $sweepstake->id,
@@ -115,6 +115,10 @@ class SweepstakeMemberManagementTest extends TestCase
             'source' => SweepstakeMember::SOURCE_JOIN_LINK,
             'is_paid' => false,
         ]);
+
+        $member = SweepstakeMember::where('email', 'link@example.test')->firstOrFail();
+
+        $response->assertRedirect(route('entrants.show', $member->join_token));
     }
 
     public function test_admin_can_mark_an_entrant_paid_and_unpaid(): void
