@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/sweepstakes/{sweepstake}/teams/{sweepstakeTeam}', [SweepstakeTeamController::class, 'update'])->name('sweepstakes.teams.update');
     Route::post('/sweepstakes/{sweepstake}/prizes', [PrizeController::class, 'store'])->name('sweepstakes.prizes.store');
     Route::post('/sweepstakes/{sweepstake}/draw', [SweepstakeDrawController::class, 'store'])->name('sweepstakes.draw.store');
+    Route::post('/sweepstakes/{sweepstake}/draw/rerun', [SweepstakeDrawController::class, 'rerun'])->name('sweepstakes.draw.rerun');
 });
 
 Route::get('/join/{joinCode}', [JoinSweepstakeController::class, 'show'])->name('join.show');

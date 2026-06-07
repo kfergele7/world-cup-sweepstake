@@ -4,7 +4,7 @@
 
 World Cup Sweepstake App lets an admin create and manage a private 2026 FIFA World Cup sweepstake.
 
-Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, set prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw.
+Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, set prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw or reasoned re-run is completed.
 
 ## Stack
 
@@ -29,20 +29,21 @@ The ranked pot draw flow is:
 6. Remove leftovers from the bottom of the rankings by default.
 7. Split usable teams into pots where each pot contains one team per entrant.
 8. Randomly assign one team from each pot to each entrant.
-9. Persist assignments and lock the sweepstake as drawn.
+9. Persist assignments against an active draw version and lock the sweepstake as drawn.
 
 Example: 7 entrants and 48 selected teams means 6 teams per entrant, 42 teams used, 6 lowest-ranked leftovers removed, then 6 pots of 7 teams.
 
-The current implementation is `App\Actions\RunRankedPotDraw`.
+The current implementation is `App\Actions\RunRankedPotDraw`. Re-runs require a plain-text reason, supersede the previous active draw and preserve previous assignments in draw history.
 
 ## Core Models
 
 - `User`: authenticated sweepstake admin.
 - `Sweepstake`: admin-owned sweepstake with join code, entry fee, status, draw mode and draw metadata.
+- `SweepstakeDraw`: per-sweepstake draw version with version number, active/superseded status, optional re-run reason and run timestamp.
 - `SweepstakeMember`: non-account entrant record with name, optional email, source, paid state and optional admin marker.
 - `Team`: global master team record.
 - `SweepstakeTeam`: per-sweepstake inclusion/removal state for a global team.
-- `TeamAssignment`: persisted draw result.
+- `TeamAssignment`: persisted draw result tied to a specific `SweepstakeDraw`.
 - `Prize`: per-sweepstake prize payout row.
 
 The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a working 48-team 2026 list with April 2026 rankings. Source references used during setup were FIFA's qualified teams page and World Cup Wiki's 2026 team/ranking summary. Refresh rankings from FIFA before production launch or any user-facing claim of current accuracy.
@@ -57,12 +58,14 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Require enough selected teams for all entrants.
 - Every entrant must receive the same number of teams.
 - Remove leftovers from the lowest-ranked teams by default.
-- Do not allow duplicate team assignments.
-- Do not allow a second draw without an explicit reset flow.
+- Do not allow duplicate team assignments within the same draw version.
+- Allow a controlled re-run only with a required reason; keep setup locked and re-randomise the current included entrants/teams.
+- Preserve previous draw assignments and mark older draw versions as superseded.
 - After a draw, lock sweepstake settings, entrant adds, edits, removals, payment changes, team selection and prize changes.
+- Send draw result emails to entrants who have an email address, using Laravel's configured mailer.
 - Warn when prize payouts exceed the collected paid-entry pot.
 - Team removal and restoration must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
-- Public entrant result pages must use `join_token`, not incremental entrant IDs, and must not expose entrant emails or admin-only controls.
+- Public entrant result pages must use `join_token`, not incremental entrant IDs, and must not expose entrant emails, other entrants' details or admin-only controls.
 
 ## Admin Journey
 
@@ -76,6 +79,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 8. Add prize payouts.
 9. Run the ranked pot draw.
 10. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
+11. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
 
 ## Entrant Journey
 
@@ -84,6 +88,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 3. Land on a private entrant page backed by their `join_token`.
 4. Before the draw, see a waiting message.
 5. After the draw, view only their own assigned teams from the same private link.
+6. If the draw is re-run, see their own draw history and the reason without seeing other entrants' private details.
 
 ## Codex Workflow Expectations
 

@@ -9,6 +9,9 @@
         <div class="mt-6 rounded-lg border border-zinc-200 bg-white">
             <div class="border-b border-zinc-200 px-5 py-4">
                 <h2 class="font-semibold">Assigned teams</h2>
+                @if ($activeDraw)
+                    <p class="mt-1 text-sm text-zinc-600">Active draw #{{ $activeDraw->version_number }}</p>
+                @endif
             </div>
 
             @if ($assignments->isEmpty())
@@ -35,5 +38,40 @@
                 </ul>
             @endif
         </div>
+
+        @if ($draws->isNotEmpty())
+            <div class="mt-6 rounded-lg border border-zinc-200 bg-white">
+                <div class="border-b border-zinc-200 px-5 py-4">
+                    <h2 class="font-semibold">Draw history</h2>
+                </div>
+
+                <div class="divide-y divide-zinc-100">
+                    @foreach ($draws as $draw)
+                        <div class="px-5 py-4 text-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <p class="font-medium">Draw #{{ $draw->version_number }} — run on {{ $draw->ran_at->format('j M Y \a\t H:i') }}</p>
+                                <span class="rounded-lg border border-zinc-200 px-2 py-1 text-xs font-medium text-zinc-700">
+                                    {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'Active draw' : 'Superseded' }}
+                                </span>
+                            </div>
+
+                            @if ($draw->reason)
+                                <p class="mt-2 text-zinc-600">Reason: {{ $draw->reason }}</p>
+                            @endif
+
+                            @if ($draw->assignments->isNotEmpty())
+                                <p class="mt-2 text-zinc-600">
+                                    Your teams:
+                                    {{ $draw->assignments
+                                        ->sortBy(fn ($assignment) => sprintf('%03d-%08d', $assignment->pot_number ?? 0, $assignment->id))
+                                        ->map(fn ($assignment) => $assignment->team->name)
+                                        ->join(', ') }}
+                                </p>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </section>
 @endsection

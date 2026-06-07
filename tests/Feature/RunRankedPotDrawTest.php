@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\RunRankedPotDraw;
 use App\Exceptions\DrawException;
 use App\Models\Sweepstake;
+use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeMember;
 use App\Models\SweepstakeTeam;
 use App\Models\Team;
@@ -46,11 +47,21 @@ class RunRankedPotDrawTest extends TestCase
         $this->assertSame(Sweepstake::STATUS_DRAWN, $sweepstake->status);
         $this->assertSame(3, $sweepstake->teams_per_member);
         $this->assertNotNull($sweepstake->drawn_at);
+        $this->assertDatabaseHas('sweepstake_draws', [
+            'sweepstake_id' => $sweepstake->id,
+            'version_number' => 1,
+            'status' => SweepstakeDraw::STATUS_ACTIVE,
+            'reason' => null,
+        ]);
         $this->assertDatabaseCount('team_assignments', 9);
 
         $sweepstake->members->each(function (SweepstakeMember $member): void {
             $this->assertSame(3, $member->assignments()->count());
         });
+
+        $this->assertTrue(TeamAssignment::where('sweepstake_id', $sweepstake->id)
+            ->whereNotNull('sweepstake_draw_id')
+            ->exists());
 
         foreach (range(1, 3) as $potNumber) {
             $assignmentsForPot = TeamAssignment::where('pot_number', $potNumber)->get();
@@ -98,6 +109,27 @@ class RunRankedPotDrawTest extends TestCase
         $this->expectExceptionMessage('already been drawn');
 
         $draw->handle($sweepstake->fresh());
+    }
+
+    public function test_it_can_rerun_a_draw_with_a_reason_and_keep_previous_assignments(): void
+    {
+        $sweepstake = $this->createSweepstake(memberCount: 2, teamCount: 4);
+        $draw = app(RunRankedPotDraw::class);
+
+        $draw->handle($sweepstake);
+        $firstDraw = SweepstakeDraw::where('sweepstake_id', $sweepstake->id)->firstOrFail();
+
+        $draw->handle($sweepstake->fresh(), 'Correcting a test draw');
+        $secondDraw = SweepstakeDraw::where('sweepstake_id', $sweepstake->id)
+            ->where('version_number', 2)
+            ->firstOrFail();
+
+        $this->assertSame(SweepstakeDraw::STATUS_SUPERSEDED, $firstDraw->fresh()->status);
+        $this->assertSame(SweepstakeDraw::STATUS_ACTIVE, $secondDraw->status);
+        $this->assertSame('Correcting a test draw', $secondDraw->reason);
+        $this->assertSame($firstDraw->id, $secondDraw->rerun_of_draw_id);
+        $this->assertSame(4, TeamAssignment::where('sweepstake_draw_id', $firstDraw->id)->count());
+        $this->assertSame(4, TeamAssignment::where('sweepstake_draw_id', $secondDraw->id)->count());
     }
 
     public function test_it_does_not_assign_removed_teams(): void

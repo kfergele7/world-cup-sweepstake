@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'user_id',
@@ -83,6 +84,18 @@ class Sweepstake extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(TeamAssignment::class);
+    }
+
+    public function draws(): HasMany
+    {
+        return $this->hasMany(SweepstakeDraw::class)->orderBy('version_number');
+    }
+
+    public function activeDraw(): HasOne
+    {
+        return $this->hasOne(SweepstakeDraw::class)
+            ->where('status', SweepstakeDraw::STATUS_ACTIVE)
+            ->latestOfMany('version_number');
     }
 
     public function prizes(): HasMany

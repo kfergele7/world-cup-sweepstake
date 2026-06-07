@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sweepstake;
+use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeTeam;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
@@ -59,12 +60,19 @@ class SweepstakeController extends Controller
 
         $sweepstake->load([
             'members' => fn ($query) => $query
-                ->with('assignments.team')
                 ->orderBy('created_at')
                 ->orderBy('id'),
+            'draws' => fn ($query) => $query
+                ->with([
+                    'assignments.member',
+                    'assignments.team',
+                ])
+                ->orderBy('version_number'),
             'sweepstakeTeams.team',
             'prizes',
         ]);
+
+        $activeDraw = $sweepstake->draws->firstWhere('status', SweepstakeDraw::STATUS_ACTIVE);
 
         $selectedTeams = $sweepstake->sweepstakeTeams
             ->filter(fn (SweepstakeTeam $sweepstakeTeam): bool => $sweepstakeTeam->is_included && ! $sweepstakeTeam->is_removed)
@@ -94,7 +102,9 @@ class SweepstakeController extends Controller
                     ];
                 })
                 ->values(),
-            'drawAssignmentCount' => $sweepstake->members->sum(fn ($member): int => $member->assignments->count()),
+            'activeDraw' => $activeDraw,
+            'draws' => $sweepstake->draws,
+            'drawAssignmentCount' => $activeDraw?->assignments->count() ?? 0,
             'prizeWarning' => $this->prizeWarning($sweepstake),
         ]);
     }

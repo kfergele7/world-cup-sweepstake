@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Exceptions\DrawException;
 use App\Models\Sweepstake;
+use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeMember;
 use App\Models\SweepstakeTeam;
 use App\Models\TeamAssignment;
@@ -77,14 +78,22 @@ class RunRankedPotDraw
     /**
      * @return Collection<int, TeamAssignment>
      */
-    public function handle(Sweepstake $sweepstake): Collection
+    public function handle(Sweepstake $sweepstake, ?string $rerunReason = null): Collection
     {
-        return DB::transaction(function () use ($sweepstake): Collection {
+        return DB::transaction(function () use ($sweepstake, $rerunReason): Collection {
             $sweepstake = Sweepstake::query()
                 ->lockForUpdate()
                 ->findOrFail($sweepstake->id);
 
-            if ($sweepstake->assignments()->exists() || $sweepstake->drawn_at !== null) {
+            $activeDraw = $sweepstake->draws()
+                ->where('status', SweepstakeDraw::STATUS_ACTIVE)
+                ->lockForUpdate()
+                ->first();
+
+            $reason = $rerunReason ? trim($rerunReason) : null;
+            $reason = $reason === '' ? null : $reason;
+
+            if ($activeDraw && $reason === null) {
                 throw new DrawException('This sweepstake has already been drawn.');
             }
 
@@ -99,6 +108,22 @@ class RunRankedPotDraw
             $plan = $this->buildPlan($sweepstake);
             $assignments = collect();
             $assignedAt = now();
+            $nextVersionNumber = (int) $sweepstake->draws()->max('version_number') + 1;
+
+            if ($activeDraw) {
+                $activeDraw->update([
+                    'status' => SweepstakeDraw::STATUS_SUPERSEDED,
+                ]);
+            }
+
+            $draw = SweepstakeDraw::create([
+                'sweepstake_id' => $sweepstake->id,
+                'version_number' => $nextVersionNumber,
+                'status' => SweepstakeDraw::STATUS_ACTIVE,
+                'reason' => $reason,
+                'ran_at' => $assignedAt,
+                'rerun_of_draw_id' => $activeDraw?->id,
+            ]);
 
             foreach ($plan['pots'] as $pot) {
                 $members = $plan['members']->shuffle()->values();
@@ -106,6 +131,7 @@ class RunRankedPotDraw
 
                 foreach ($teams as $index => $sweepstakeTeam) {
                     $assignments->push(TeamAssignment::create([
+                        'sweepstake_draw_id' => $draw->id,
                         'sweepstake_id' => $sweepstake->id,
                         'sweepstake_member_id' => $members[$index]->id,
                         'team_id' => $sweepstakeTeam->team_id,

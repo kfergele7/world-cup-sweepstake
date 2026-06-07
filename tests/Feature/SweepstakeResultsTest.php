@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Sweepstake;
+use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeMember;
 use App\Models\SweepstakeTeam;
 use App\Models\Team;
@@ -34,7 +35,7 @@ class SweepstakeResultsTest extends TestCase
             ->get(route('sweepstakes.show', $sweepstake))
             ->assertOk()
             ->assertSee('Draw results')
-            ->assertSee('Assigned teams grouped by entrant.')
+            ->assertSee('Active draw #1 results grouped by entrant.')
             ->assertSee('Alice Adams has 2 teams')
             ->assertSee('Bob Brown has 2 teams')
             ->assertSee('Team 1')
@@ -68,7 +69,7 @@ class SweepstakeResultsTest extends TestCase
             ->assertDontSee('Alice Adams has 1 team');
     }
 
-    public function test_admin_can_copy_a_private_view_link_for_a_manual_entrant(): void
+    public function test_entrant_cards_show_a_private_button_without_plain_long_token_url(): void
     {
         $admin = $this->createUser('admin@example.test');
         $sweepstake = $this->createSweepstake($admin, teamCount: 2);
@@ -77,8 +78,10 @@ class SweepstakeResultsTest extends TestCase
         $this->actingAs($admin)
             ->get(route('sweepstakes.show', $sweepstake))
             ->assertOk()
-            ->assertSee('Private teams link')
-            ->assertSee(route('entrants.show', $member->join_token));
+            ->assertSee('View team page')
+            ->assertSee('Manage')
+            ->assertDontSeeText(route('entrants.show', $member->join_token))
+            ->assertSee(route('entrants.show', $member->join_token), false);
     }
 
     public function test_link_joined_entrant_can_view_their_private_waiting_page_by_secure_token(): void
@@ -118,6 +121,7 @@ class SweepstakeResultsTest extends TestCase
         $this->get(route('entrants.show', $alice->join_token))
             ->assertOk()
             ->assertSee('Assigned teams')
+            ->assertSee('Active draw #1')
             ->assertSee('Team 1')
             ->assertSee('Pot 1')
             ->assertDontSee('Team 2')
@@ -125,6 +129,48 @@ class SweepstakeResultsTest extends TestCase
             ->assertDontSee('bob@example.test')
             ->assertDontSee('Run ranked pot draw')
             ->assertDontSee('Private entrant view');
+    }
+
+    public function test_admin_and_entrant_can_see_draw_history_after_a_rerun(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $alice = $this->createMember($sweepstake, 'Alice Adams', email: 'alice@example.test', token: 'alice-token');
+        $bob = $this->createMember($sweepstake, 'Bob Brown', email: 'bob@example.test', token: 'bob-token');
+        $teams = Team::orderBy('id')->get();
+
+        $firstDraw = $this->drawSweepstake($sweepstake, [
+            [$alice, $teams[0], 1],
+            [$bob, $teams[1], 1],
+        ]);
+
+        $firstDraw->update(['status' => SweepstakeDraw::STATUS_SUPERSEDED]);
+
+        $this->drawSweepstake($sweepstake, [
+            [$alice, $teams[1], 1],
+            [$bob, $teams[0], 1],
+        ], versionNumber: 2, reason: 'Ryan was missed from the entrant list');
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('Draw history')
+            ->assertSee('Draw #1')
+            ->assertSee('Superseded')
+            ->assertSee('Draw #2')
+            ->assertSee('Active draw')
+            ->assertSee('Reason: Ryan was missed from the entrant list')
+            ->assertSee('Bob Brown');
+
+        $this->get(route('entrants.show', $alice->join_token))
+            ->assertOk()
+            ->assertSee('Draw history')
+            ->assertSee('Superseded')
+            ->assertSee('Active draw')
+            ->assertSee('Reason: Ryan was missed from the entrant list')
+            ->assertSee('Team 2')
+            ->assertDontSee('bob@example.test')
+            ->assertDontSee('Bob Brown');
     }
 
     public function test_unknown_entrant_token_returns_not_found(): void
@@ -206,12 +252,20 @@ class SweepstakeResultsTest extends TestCase
     /**
      * @param  array<int, array{0: SweepstakeMember, 1: Team, 2: int}>  $assignments
      */
-    private function drawSweepstake(Sweepstake $sweepstake, array $assignments): void
+    private function drawSweepstake(Sweepstake $sweepstake, array $assignments, int $versionNumber = 1, ?string $reason = null): SweepstakeDraw
     {
         $assignedAt = now();
+        $draw = SweepstakeDraw::create([
+            'sweepstake_id' => $sweepstake->id,
+            'version_number' => $versionNumber,
+            'status' => SweepstakeDraw::STATUS_ACTIVE,
+            'reason' => $reason,
+            'ran_at' => $assignedAt,
+        ]);
 
         foreach ($assignments as [$member, $team, $potNumber]) {
             TeamAssignment::create([
+                'sweepstake_draw_id' => $draw->id,
                 'sweepstake_id' => $sweepstake->id,
                 'sweepstake_member_id' => $member->id,
                 'team_id' => $team->id,
@@ -227,5 +281,7 @@ class SweepstakeResultsTest extends TestCase
                 ->max(fn ($memberAssignments): int => $memberAssignments->count()),
             'drawn_at' => $assignedAt,
         ])->save();
+
+        return $draw;
     }
 }

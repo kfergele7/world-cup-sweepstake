@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
+    'sweepstake_draw_id',
     'sweepstake_id',
     'sweepstake_member_id',
     'team_id',
@@ -29,6 +30,11 @@ class TeamAssignment extends Model
     public function sweepstake(): BelongsTo
     {
         return $this->belongsTo(Sweepstake::class);
+    }
+
+    public function draw(): BelongsTo
+    {
+        return $this->belongsTo(SweepstakeDraw::class, 'sweepstake_draw_id');
     }
 
     public function member(): BelongsTo
