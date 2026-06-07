@@ -52,13 +52,14 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Use all entrants in the sweepstake for the MVP draw, whether paid or unpaid.
 - Treat paid/unpaid as an admin tracking field only at this stage.
 - Record entrant source as `manual`, `join_link` or `pin`.
+- Allow the owning admin to edit sweepstake name, entry fee, currency and draft/open status before the draw.
 - Require at least 2 entrants before a draw.
 - Require enough selected teams for all entrants.
 - Every entrant must receive the same number of teams.
 - Remove leftovers from the lowest-ranked teams by default.
 - Do not allow duplicate team assignments.
 - Do not allow a second draw without an explicit reset flow.
-- After a draw, lock entrant adds, edits, removals, payment changes, team selection and prize changes.
+- After a draw, lock sweepstake settings, entrant adds, edits, removals, payment changes, team selection and prize changes.
 - Warn when prize payouts exceed the collected paid-entry pot.
 - Team removal must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
 
@@ -66,13 +67,14 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 
 1. Register or sign in as an admin.
 2. Create a sweepstake from the dashboard.
-3. Share the join link or join code.
-4. Review joined entrants, add offline entrants manually and mark paid entrants.
-5. Remove entrants before the draw if needed.
-6. Remove or restore teams for that sweepstake.
-7. Add prize payouts.
-8. Run the ranked pot draw.
-9. Review persisted assignments.
+3. Edit basic sweepstake settings such as name, entry fee, currency and draft/open status before the draw.
+4. Share the join link or join code.
+5. Review joined entrants, add offline entrants manually and mark paid entrants.
+6. Remove entrants before the draw if needed.
+7. Remove or restore teams for that sweepstake.
+8. Add prize payouts.
+9. Run the ranked pot draw.
+10. Review persisted assignments.
 
 ## Entrant Journey
 

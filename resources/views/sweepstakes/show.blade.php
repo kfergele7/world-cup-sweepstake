@@ -158,9 +158,45 @@
         </section>
 
         <aside class="space-y-6">
-            <div class="rounded-lg border border-zinc-200 bg-white p-5">
+            <form method="POST" action="{{ route('sweepstakes.settings.update', $sweepstake) }}" class="rounded-lg border border-zinc-200 bg-white p-5">
+                @csrf
+                @method('PATCH')
+
                 <h2 class="font-semibold">Sweepstake settings</h2>
-                <dl class="mt-4 space-y-3 text-sm">
+                <p class="mt-1 text-sm text-zinc-600">
+                    {{ $sweepstake->isLockedForChanges() ? 'Settings are locked after the draw.' : 'These settings can be changed before the draw.' }}
+                </p>
+
+                <div class="mt-4 space-y-4">
+                    <label class="block">
+                        <span class="text-sm font-medium text-zinc-700">Sweepstake name</span>
+                        <input name="sweepstake_name" value="{{ old('sweepstake_name', $sweepstake->name) }}" required class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                    </label>
+
+                    <div class="grid grid-cols-[1fr_90px] gap-3">
+                        <label class="block">
+                            <span class="text-sm font-medium text-zinc-700">Entry fee</span>
+                            <input type="number" name="entry_fee" value="{{ old('entry_fee', (float) $sweepstake->entry_fee) }}" min="0" step="0.01" required class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                        </label>
+
+                        <label class="block">
+                            <span class="text-sm font-medium text-zinc-700">Currency</span>
+                            <input name="currency" value="{{ old('currency', $sweepstake->currency) }}" maxlength="3" required class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm uppercase" @disabled($sweepstake->isLockedForChanges())>
+                        </label>
+                    </div>
+
+                    <label class="block">
+                        <span class="text-sm font-medium text-zinc-700">Status</span>
+                        <select name="status" class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" @disabled($sweepstake->isLockedForChanges())>
+                            <option value="{{ \App\Models\Sweepstake::STATUS_DRAFT }}" @selected(old('status', $sweepstake->status) === \App\Models\Sweepstake::STATUS_DRAFT)>Draft</option>
+                            <option value="{{ \App\Models\Sweepstake::STATUS_OPEN }}" @selected(old('status', $sweepstake->status) === \App\Models\Sweepstake::STATUS_OPEN)>Open</option>
+                        </select>
+                    </label>
+                </div>
+
+                <button class="mt-5 rounded-lg bg-zinc-950 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800" @disabled($sweepstake->isLockedForChanges())>Save settings</button>
+
+                <dl class="mt-5 border-t border-zinc-100 pt-4 space-y-3 text-sm">
                     <div class="flex justify-between gap-4">
                         <dt class="text-zinc-600">Entry fee</dt>
                         <dd class="font-medium">{{ $sweepstake->currency }} {{ number_format((float) $sweepstake->entry_fee, 2) }}</dd>
@@ -186,7 +222,7 @@
                         <dd class="font-medium">{{ $sweepstake->teams_per_member ?? 'Not drawn' }}</dd>
                     </div>
                 </dl>
-            </div>
+            </form>
 
             <form method="POST" action="{{ route('sweepstakes.prizes.store', $sweepstake) }}" class="rounded-lg border border-zinc-200 bg-white p-5">
                 @csrf

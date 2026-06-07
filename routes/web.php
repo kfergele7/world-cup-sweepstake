@@ -33,6 +33,7 @@ Route::get('/dashboard', DashboardController::class)
 Route::middleware('auth')->group(function () {
     Route::post('/sweepstakes', [SweepstakeController::class, 'store'])->name('sweepstakes.store');
     Route::get('/sweepstakes/{sweepstake}', [SweepstakeController::class, 'show'])->name('sweepstakes.show');
+    Route::patch('/sweepstakes/{sweepstake}/settings', [SweepstakeController::class, 'update'])->name('sweepstakes.settings.update');
     Route::post('/sweepstakes/{sweepstake}/members', [SweepstakeMemberController::class, 'store'])->name('sweepstakes.members.store');
     Route::patch('/sweepstakes/{sweepstake}/members/{member}', [SweepstakeMemberController::class, 'update'])->name('sweepstakes.members.update');
     Route::patch('/sweepstakes/{sweepstake}/members/{member}/payment', [SweepstakeMemberController::class, 'updatePayment'])->name('sweepstakes.members.payment.update');

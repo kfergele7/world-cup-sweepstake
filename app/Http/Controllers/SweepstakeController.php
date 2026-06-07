@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class SweepstakeController extends Controller
@@ -83,6 +84,43 @@ class SweepstakeController extends Controller
             'removedTeams' => $sweepstake->sweepstakeTeams->where('is_removed', true)->values(),
             'prizeWarning' => $this->prizeWarning($sweepstake),
         ]);
+    }
+
+    public function update(Request $request, Sweepstake $sweepstake): RedirectResponse
+    {
+        $this->ensureAdmin($request, $sweepstake);
+
+        if ($sweepstake->isLockedForChanges()) {
+            return back()->withErrors([
+                'settings' => 'Sweepstake settings are locked after the draw.',
+            ]);
+        }
+
+        $attributes = $request->validate([
+            'sweepstake_name' => ['required', 'string', 'max:255'],
+            'entry_fee' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'currency' => ['required', 'string', 'size:3'],
+            'status' => ['required', Rule::in([
+                Sweepstake::STATUS_DRAFT,
+                Sweepstake::STATUS_OPEN,
+            ])],
+        ], [
+            'sweepstake_name.required' => 'Please enter a sweepstake name.',
+            'entry_fee.required' => 'Please enter an entry fee.',
+            'entry_fee.numeric' => 'Entry fee must be a valid amount.',
+            'entry_fee.min' => 'Entry fee cannot be negative.',
+            'currency.size' => 'Currency must be a three-letter code, such as GBP.',
+            'status.in' => 'Status can only be Draft or Open before the draw.',
+        ]);
+
+        $sweepstake->update([
+            'name' => $attributes['sweepstake_name'],
+            'entry_fee' => $attributes['entry_fee'],
+            'currency' => Str::upper($attributes['currency']),
+            'status' => $attributes['status'],
+        ]);
+
+        return back()->with('status', 'Sweepstake settings saved.');
     }
 
     private function uniqueSlug(string $name): string
