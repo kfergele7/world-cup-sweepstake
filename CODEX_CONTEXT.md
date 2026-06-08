@@ -4,7 +4,7 @@
 
 SweepKit lets an admin create and manage a private 2026 FIFA World Cup sweepstake.
 
-Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, set prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw or reasoned re-run is completed.
+Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, edit prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw, reasoned re-run or cancellation is completed.
 
 ## Stack
 
@@ -34,20 +34,22 @@ The ranked pot draw flow is:
 3. Count all entrants in the sweepstake.
 4. Calculate `teams_per_member = floor(selected_team_count / member_count)`.
 5. Calculate `usable_team_count = teams_per_member * member_count`.
-6. Remove leftovers from the bottom of the rankings by default.
+6. If selected teams do not divide evenly by entrants, require the admin to choose a leftover strategy:
+   - randomly assign leftover teams, which uses all selected teams but gives some entrants one extra team;
+   - remove the lowest-ranked leftover teams for an even draw.
 7. Split usable teams into pots where each pot contains one team per entrant.
 8. Randomly assign one team from each pot to each entrant.
-9. Persist assignments against an active draw version and lock the sweepstake as drawn.
+9. Persist assignments against an active draw version, record the leftover strategy and lock the sweepstake as drawn.
 
-Example: 7 entrants and 48 selected teams means 6 teams per entrant, 42 teams used, 6 lowest-ranked leftovers removed, then 6 pots of 7 teams.
+Example: 7 entrants and 48 selected teams means 6 teams per entrant, with 6 leftover teams. The admin can either use all 48 teams with 6 entrants receiving one extra team, or remove the 6 lowest-ranked teams and run an even 42-team draw.
 
-The current implementation is `App\Actions\RunRankedPotDraw`. Re-runs require a plain-text reason, supersede the previous active draw and preserve previous assignments in draw history.
+The current implementation is `App\Actions\RunRankedPotDraw`. Re-runs require a plain-text reason, supersede the previous active draw and preserve previous assignments in draw history. Cancelling the active draw requires a reason, marks that draw as cancelled and reopens setup without deleting previous assignments.
 
 ## Core Models
 
 - `User`: authenticated sweepstake admin.
 - `Sweepstake`: admin-owned sweepstake with join code, entry fee, status, draw mode and draw metadata.
-- `SweepstakeDraw`: per-sweepstake draw version with version number, active/superseded status, optional re-run reason and run timestamp.
+- `SweepstakeDraw`: per-sweepstake draw version with version number, active/superseded/cancelled status, optional re-run/cancellation reasons, leftover strategy metadata and run timestamp.
 - `SweepstakeMember`: non-account entrant record with name, optional email, source, paid state and optional admin marker.
 - `Team`: global master team record.
 - `SweepstakeTeam`: per-sweepstake inclusion/removal state for a global team.
@@ -59,19 +61,25 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 ## Important Rules
 
 - Use all entrants in the sweepstake for the MVP draw, whether paid or unpaid.
+- A sweepstake can have up to 48 entrants.
+- There must be at least one included team available for every entrant; adding entrants and running draws are blocked when entrant count would exceed included team count.
 - Treat paid/unpaid as an admin tracking field only at this stage.
 - Record entrant source as `manual`, `join_link` or `pin`.
 - Allow the owning admin to edit sweepstake name, entry fee, currency and draft/open status before the draw.
 - Require at least 2 entrants before a draw.
 - Require enough selected teams for all entrants.
-- Every entrant must receive the same number of teams.
-- Remove leftovers from the lowest-ranked teams by default.
+- If teams divide evenly by entrants, every entrant receives the same number of teams.
+- If teams do not divide evenly by entrants, the admin must explicitly choose whether to randomly assign leftover teams or remove the lowest-ranked leftover teams for an even draw.
 - Do not allow duplicate team assignments within the same draw version.
 - Allow a controlled re-run only with a required reason; keep setup locked and re-randomise the current included entrants/teams.
+- Allow the active draw to be cancelled with a required reason; setup reopens, the cancelled draw stays in history and a new draw can be run after changes.
 - Preserve previous draw assignments and mark older draw versions as superseded.
-- After a draw, lock sweepstake settings, entrant adds, edits, removals, payment changes, team selection and prize changes.
+- After an active draw, lock sweepstake settings, entrant adds, edits, removals, payment changes, team selection and prize changes until the active draw is cancelled/reopened.
 - Send draw result emails to entrants who have an email address, using Laravel's configured mailer.
 - Warn when prize payouts exceed the collected paid-entry pot.
+- Prize rows can be added, edited, reordered and removed before a draw, with total prize payout shown against collected and expected pots.
+- Team names should render with `Team::displayFlag()` where a stored flag or safe country-code mapping exists; unknown codes render without a flag.
+- Admin pages should expose copy buttons for public join/private entrant links and avoid showing long raw URLs as visible text.
 - Team removal and restoration must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
 - Public entrant result pages must use `join_token`, not incremental entrant IDs, and must not expose entrant emails, other entrants' details or admin-only controls.
 
@@ -84,10 +92,11 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 5. Review joined entrants, add offline entrants manually and mark paid entrants.
 6. Remove entrants before the draw if needed.
 7. Bulk remove or restore teams for that sweepstake.
-8. Add prize payouts.
-9. Run the ranked pot draw.
+8. Add or edit prize payouts.
+9. Choose a leftover team strategy when needed and run the ranked pot draw.
 10. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
 11. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
+12. If setup was wrong after a draw, cancel the active draw with a clear reason, make changes and run a new draw.
 
 ## Entrant Journey
 
@@ -96,7 +105,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 3. Land on a private entrant page backed by their `join_token`.
 4. Before the draw, see a waiting message.
 5. After the draw, view only their own assigned teams from the same private link.
-6. If the draw is re-run, see their own draw history and the reason without seeing other entrants' private details.
+6. If the draw is re-run or cancelled, see their own draw history and the reason without seeing other entrants' private details.
 
 ## Codex Workflow Expectations
 

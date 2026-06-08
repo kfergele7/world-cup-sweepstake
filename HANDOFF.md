@@ -2,25 +2,25 @@
 
 ## Current State
 
-The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation for SweepKit, a private football sweepstake app. The app is scaffolded directly in the repository root, with admin auth, dashboard routes, sweepstake creation, editable sweepstake settings, public joining, cleaned-up manual entrant management, paid/unpaid entrant toggles, bulk per-sweepstake team removal/restoration, prize setup, ranked pot draw execution, draw result emails, controlled draw re-runs, grouped admin draw history and private entrant result pages.
+The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation for SweepKit, a private football sweepstake app. The app is scaffolded directly in the repository root, with admin auth, dashboard routes, sweepstake creation, editable sweepstake settings, public joining, cleaned-up manual entrant management, paid/unpaid entrant toggles, bulk per-sweepstake team removal/restoration, editable prizes, ranked pot draw execution, draw result/cancellation emails, controlled draw re-runs, active draw cancellation/reopen setup, sidebar draw history and private entrant result pages.
 
 The ranked pot draw is implemented and covered by automated feature tests. Draws now include all entrants, with paid/unpaid kept as an admin tracking field. Local SQLite has been migrated and seeded.
 
-This pass rebranded visible app surfaces to SweepKit, added brand colour tokens and reusable SweepKit UI classes, introduced a text wordmark component, and polished the header, dashboard, admin detail page, entrant cards, team selection, draw results/history, public entrant page, auth pages and empty/status states. The repo and folder names intentionally remain unchanged.
+This pass added the 48-entrant and included-team capacity rules, explicit leftover team draw options, cancel/reopen setup for active draws, editable/removable prize rows with payout totals, copy buttons for join/private links, flag rendering beside team names, confirmation modals for important actions, safer entrant-page breadcrumbs, a fixed Manage/Cancel entrant-card layout and a compact right-sidebar draw history panel.
 
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
 - App configuration and ignores: `.env.example`, `.gitignore`, `README.md`, `config/app.php`.
 - Models: `User`, `Sweepstake`, `SweepstakeDraw`, `SweepstakeMember`, `Team`, `SweepstakeTeam`, `TeamAssignment`, `Prize`.
-- Migrations for sweepstakes, draw versions, entrants, entrant source, teams, sweepstake teams, assignments and prizes.
+- Migrations for sweepstakes, draw versions and draw strategy/cancellation metadata, entrants, entrant source, teams, sweepstake teams, assignments and prizes.
 - Seeders: `DatabaseSeeder`, `TeamSeeder`.
 - Draw logic: `app/Actions/RunRankedPotDraw.php`, `app/Exceptions/DrawException.php`.
-- Mail: `app/Mail/DrawResultsReady.php`, `resources/views/mail/draw-results-ready.blade.php`.
-- Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, entrants, prizes, first draw and reasoned draw re-runs.
+- Mail: `app/Mail/DrawResultsReady.php`, `app/Mail/DrawCancelled.php`, `resources/views/mail/draw-results-ready.blade.php`, `resources/views/mail/draw-cancelled.blade.php`.
+- Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, entrants, editable prizes, first draw, reasoned draw re-runs and active draw cancellation.
 - Brand tokens and component classes: `resources/css/app.css`.
-- Basic Blade views plus a small Vue dashboard stats component, text wordmark component and lightweight bulk-team selected-count JS.
-- Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
+- Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components and lightweight JS for bulk counts, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
+- Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
 
 ## Setup Steps
@@ -43,6 +43,7 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - `php artisan migrate`
 - `php artisan db:seed`
 - `php artisan test`
+- `php artisan migrate`
 - `npm run build`
 - `./vendor/bin/pint`
 - `composer test`
@@ -65,11 +66,11 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - Attempted authenticated browser smoke test for the entrant UI; the in-app Browser loaded the app but text entry was blocked by a missing virtual clipboard in the browser plugin. Authenticated flows are covered by Laravel feature tests.
 - Attempted to discover the in-app Browser control tool for this pass, but it was not exposed in this thread. Browser-level verification was limited to automated Laravel feature tests and `npm run build`.
 
-Current passing test result: 42 tests, 205 assertions.
+Current passing test result: 61 tests, 306 assertions.
 
 ## Known Issues Or Blockers
 
-- Draw re-runs currently re-randomise the locked/current entrant and team setup only; there is no reset/reopen setup flow yet.
+- Browser-level visual verification was not available in the current Codex thread because the in-app Browser control tool was not exposed.
 - There is no separate PIN entry route yet, although entrant source values still support `pin`.
 - Admin auth is intentionally minimal and does not include password reset/email verification.
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.
@@ -79,13 +80,12 @@ Current passing test result: 42 tests, 205 assertions.
 
 ## Recommended Next Steps
 
-1. Add a clear reset/reopen setup flow with audit/history expectations for cases where admins need to change entrants or teams after a draw.
-2. Add a dedicated PIN entry flow if PIN joining remains part of the intended MVP.
-3. Add richer admin management for team search, select all/none, copy-link affordances and wider tournament configuration.
+1. Add a dedicated PIN entry flow if PIN joining remains part of the intended MVP.
+2. Add richer admin management for team search, select all/none and wider tournament configuration.
+3. Consider adding browser-level feature tests for copy feedback, confirmation modals and the Manage/Cancel layout once a browser runner is available.
 4. Consider extracting policies or form request classes once route/controller surface grows further.
-5. Add browser-level feature tests for the main admin, bulk team, re-run and entrant result flows.
-6. Add the final SweepKit logo asset and favicon once the brand mark is chosen.
-7. Refresh team rankings and group metadata from an authoritative source before launch.
+5. Add the final SweepKit logo asset and favicon once the brand mark is chosen.
+6. Refresh team rankings and group metadata from an authoritative source before launch.
 
 ## Local browser check
 

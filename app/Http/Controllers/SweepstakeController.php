@@ -86,6 +86,10 @@ class SweepstakeController extends Controller
                 ];
             })
             ->values();
+        $memberCount = $sweepstake->members->count();
+        $selectedTeamCount = $selectedTeams->count();
+        $leftoverTeamCount = $memberCount > 0 ? $selectedTeamCount % $memberCount : 0;
+        $baseTeamsPerMember = $memberCount > 0 ? intdiv($selectedTeamCount, max($memberCount, 1)) : 0;
 
         return view('sweepstakes.show', [
             'sweepstake' => $sweepstake,
@@ -105,6 +109,16 @@ class SweepstakeController extends Controller
             'activeDraw' => $activeDraw,
             'draws' => $sweepstake->draws,
             'drawAssignmentCount' => $activeDraw?->assignments->count() ?? 0,
+            'memberCount' => $memberCount,
+            'selectedTeamCount' => $selectedTeamCount,
+            'leftoverTeamCount' => $leftoverTeamCount,
+            'baseTeamsPerMember' => $baseTeamsPerMember,
+            'entrantCapacity' => $sweepstake->maximumEntrants(),
+            'latestCancelledDraw' => $sweepstake->draws
+                ->sortByDesc('version_number')
+                ->firstWhere('status', SweepstakeDraw::STATUS_CANCELLED),
+            'totalPrizePayout' => (float) $sweepstake->prizes->sum('amount'),
+            'expectedEntryPot' => (float) $sweepstake->entry_fee * $memberCount,
             'prizeWarning' => $this->prizeWarning($sweepstake),
         ]);
     }

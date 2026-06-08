@@ -121,6 +121,52 @@ class SweepstakeMemberManagementTest extends TestCase
         $response->assertRedirect(route('entrants.show', $member->join_token));
     }
 
+    public function test_admin_cannot_add_more_than_forty_eight_entrants(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 48);
+
+        foreach (range(1, 48) as $index) {
+            $this->createMember($sweepstake, "Entrant {$index}");
+        }
+
+        $this->actingAs($admin)
+            ->from(route('sweepstakes.show', $sweepstake))
+            ->post(route('sweepstakes.members.store', $sweepstake), [
+                'name' => 'Entrant 49',
+                'email' => 'entrant49@example.test',
+            ])
+            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertSessionHasErrors('member');
+
+        $this->assertDatabaseMissing('sweepstake_members', [
+            'sweepstake_id' => $sweepstake->id,
+            'email' => 'entrant49@example.test',
+        ]);
+    }
+
+    public function test_public_join_flow_cannot_exceed_entrant_capacity(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+
+        $this->createMember($sweepstake, 'First Entrant');
+        $this->createMember($sweepstake, 'Second Entrant');
+
+        $this->from(route('join.show', $sweepstake->join_code))
+            ->post(route('join.store', $sweepstake->join_code), [
+                'name' => 'Third Entrant',
+                'email' => 'third@example.test',
+            ])
+            ->assertRedirect(route('join.show', $sweepstake->join_code))
+            ->assertSessionHasErrors('name');
+
+        $this->assertDatabaseMissing('sweepstake_members', [
+            'sweepstake_id' => $sweepstake->id,
+            'email' => 'third@example.test',
+        ]);
+    }
+
     public function test_admin_can_mark_an_entrant_paid_and_unpaid(): void
     {
         $admin = $this->createUser('admin@example.test');
@@ -201,7 +247,7 @@ class SweepstakeMemberManagementTest extends TestCase
         ]);
     }
 
-    private function createSweepstake(User $admin, int $teamCount = 0): Sweepstake
+    private function createSweepstake(User $admin, int $teamCount = 48): Sweepstake
     {
         $sweepstake = Sweepstake::create([
             'user_id' => $admin->id,

@@ -1,24 +1,82 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $removeLeftoversStrategy = \App\Models\SweepstakeDraw::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED;
+        $assignLeftoversStrategy = \App\Models\SweepstakeDraw::LEFTOVER_STRATEGY_ASSIGN_RANDOMLY;
+        $hasLeftoverTeams = $memberCount > 0 && $leftoverTeamCount > 0;
+    @endphp
+
     <div class="grid gap-8 xl:grid-cols-[1fr_360px]">
         <section>
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">{{ ucfirst($sweepstake->status) }}</p>
                     <h1 class="mt-2 text-3xl font-black text-brand-navy">{{ $sweepstake->name }}</h1>
-                    <p class="mt-2 text-sm text-brand-muted">Join link: <a class="font-semibold text-brand-blue underline" href="{{ route('join.show', $sweepstake->join_code) }}">{{ route('join.show', $sweepstake->join_code) }}</a></p>
+                    <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                        <span class="sk-badge sk-badge-blue">Join code {{ $sweepstake->join_code }}</span>
+                        <a class="sk-btn-pill" href="{{ route('join.show', $sweepstake->join_code) }}">Open join page</a>
+                        <x-copy-button
+                            :value="route('join.show', $sweepstake->join_code)"
+                            label="Copy public join link"
+                        />
+                    </div>
                 </div>
 
                 @if ($activeDraw)
                     <p class="sk-badge sk-badge-green px-4 py-2 text-sm">Active draw #{{ $activeDraw->version_number }}</p>
                 @else
-                    <form method="POST" action="{{ route('sweepstakes.draw.store', $sweepstake) }}">
+                    <form
+                        method="POST"
+                        action="{{ route('sweepstakes.draw.store', $sweepstake) }}"
+                        data-confirm-form
+                        data-confirm-title="Run draw"
+                        data-confirm-message="This will assign teams to every entrant and notify entrants with email addresses."
+                        data-confirm-label="Run draw"
+                        class="max-w-sm space-y-3"
+                    >
                         @csrf
+                        @unless ($hasLeftoverTeams)
+                            <input type="hidden" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}">
+                        @endunless
+                        @if ($hasLeftoverTeams)
+                            <fieldset class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                                <legend class="font-semibold">Leftover teams</legend>
+                                <label class="mt-2 flex gap-2">
+                                    <input type="radio" name="leftover_team_strategy" value="{{ $assignLeftoversStrategy }}" required class="mt-1 border-amber-300 text-brand-green">
+                                    <span>Randomly assign the leftover teams</span>
+                                </label>
+                                <label class="mt-2 flex gap-2">
+                                    <input type="radio" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}" required class="mt-1 border-amber-300 text-brand-green">
+                                    <span>Remove leftover teams for an even draw</span>
+                                </label>
+                            </fieldset>
+                        @endif
                         <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges())>Run ranked pot draw</button>
                     </form>
                 @endif
             </div>
+
+            @if (! $activeDraw && $latestCancelledDraw)
+                <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
+                    <p class="font-semibold">The previous draw was cancelled. Setup is open again.</p>
+                    @if ($latestCancelledDraw->cancelled_reason)
+                        <p class="mt-1">Reason: {{ $latestCancelledDraw->cancelled_reason }}</p>
+                    @endif
+                </div>
+            @endif
+
+            @if (! $activeDraw && $memberCount > 0 && $selectedTeamCount < $memberCount)
+                <div class="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
+                    You currently have {{ $memberCount }} entrants but only {{ $selectedTeamCount }} teams available. Remove entrants or restore teams before running the draw.
+                </div>
+            @elseif (! $activeDraw && $hasLeftoverTeams)
+                <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
+                    <p class="font-semibold">With {{ $memberCount }} entrants and {{ $selectedTeamCount }} teams, everyone can receive {{ $baseTeamsPerMember }} teams each. There will be {{ $leftoverTeamCount }} teams left over.</p>
+                    <p class="mt-1">Choose a leftover team option when you run the draw, or review the team selection first.</p>
+                    <button type="button" class="mt-3 text-sm font-semibold text-brand-blue underline" data-scroll-to="#team-selection">Review team selection</button>
+                </div>
+            @endif
 
             @if ($prizeWarning)
                 <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 shadow-sm">
@@ -29,7 +87,7 @@
             <div class="sk-card mt-8 overflow-hidden">
                 <div class="sk-card-header">
                     <h2 class="font-semibold text-brand-navy">Entrants</h2>
-                    <p class="mt-1 text-sm text-brand-muted">All entrants are included in the draw. Paid status is just for your own tracking.</p>
+                    <p class="mt-1 text-sm text-brand-muted">All entrants are included in the draw. Paid status is just for your own tracking. Capacity: {{ $memberCount }} / {{ $entrantCapacity }} entrants.</p>
                 </div>
 
                 <form method="POST" action="{{ route('sweepstakes.members.store', $sweepstake) }}" class="grid gap-3 border-b border-brand-border bg-brand-soft px-5 py-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
@@ -52,7 +110,7 @@
 
                 <div class="divide-y divide-brand-border/70">
                     @forelse ($sweepstake->members as $member)
-                        <div class="px-5 py-4">
+                        <div class="px-5 py-4" data-manage-container>
                             <div class="flex flex-wrap items-start justify-between gap-4">
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
@@ -75,46 +133,61 @@
                                         <a class="sk-btn-pill" href="{{ route('entrants.show', $member->join_token) }}">
                                             {{ $activeDraw ? 'View drawn teams' : 'View team page' }}
                                         </a>
+                                        <x-copy-button
+                                            :value="route('entrants.show', $member->join_token)"
+                                            label="Copy private team link"
+                                            button-label="Copy link"
+                                        />
                                     @endif
 
-                                    <details class="group basis-full sm:basis-auto">
-                                        <summary class="sk-btn-pill list-none">Manage</summary>
-                                        <div class="mt-4 w-full rounded-lg border border-brand-border bg-brand-soft p-4 sm:w-[32rem]">
-                                            <form id="member-edit-{{ $member->id }}" method="POST" action="{{ route('sweepstakes.members.update', [$sweepstake, $member]) }}" class="grid gap-3 sm:grid-cols-2">
-                                                @csrf
-                                                @method('PATCH')
-                                                <label>
-                                                    <span class="text-sm font-medium text-brand-navy">Name</span>
-                                                    <input name="name" value="{{ old('name', $member->name) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
-                                                </label>
-                                                <label>
-                                                    <span class="text-sm font-medium text-brand-navy">Email</span>
-                                                    <input type="email" name="email" value="{{ old('email', $member->email) }}" class="sk-input" @disabled($sweepstake->isLockedForChanges())>
-                                                </label>
-                                            </form>
+                                    <button type="button" class="sk-btn-pill" data-manage-toggle aria-expanded="false">
+                                        <span data-manage-open-label>Manage</span>
+                                        <span class="hidden" data-manage-close-label>Cancel</span>
+                                    </button>
+                                </div>
+                            </div>
 
-                                            <div class="mt-4 flex flex-wrap gap-2">
-                                                <button form="member-edit-{{ $member->id }}" class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges())>Save entrant</button>
+                            <div class="mt-4 hidden rounded-lg border border-brand-border bg-brand-soft p-4" data-manage-panel>
+                                <form id="member-edit-{{ $member->id }}" method="POST" action="{{ route('sweepstakes.members.update', [$sweepstake, $member]) }}" class="grid gap-3 sm:grid-cols-2">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label>
+                                        <span class="text-sm font-medium text-brand-navy">Name</span>
+                                        <input name="name" value="{{ old('name', $member->name) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                    </label>
+                                    <label>
+                                        <span class="text-sm font-medium text-brand-navy">Email</span>
+                                        <input type="email" name="email" value="{{ old('email', $member->email) }}" class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                    </label>
+                                </form>
 
-                                                <form method="POST" action="{{ route('sweepstakes.members.payment.update', [$sweepstake, $member]) }}">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <input type="hidden" name="is_paid" value="{{ $member->is_paid ? 0 : 1 }}">
-                                                    <button class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges())>
-                                                        {{ $member->is_paid ? 'Mark as unpaid' : 'Mark as paid' }}
-                                                    </button>
-                                                </form>
-                                            </div>
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    <button form="member-edit-{{ $member->id }}" class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges())>Save entrant</button>
 
-                                            <div class="mt-4 border-t border-brand-border pt-4">
-                                                <form method="POST" action="{{ route('sweepstakes.members.destroy', [$sweepstake, $member]) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges())>Remove entrant</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </details>
+                                    <form method="POST" action="{{ route('sweepstakes.members.payment.update', [$sweepstake, $member]) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="is_paid" value="{{ $member->is_paid ? 0 : 1 }}">
+                                        <button class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges())>
+                                            {{ $member->is_paid ? 'Mark as unpaid' : 'Mark as paid' }}
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div class="mt-4 border-t border-brand-border pt-4">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('sweepstakes.members.destroy', [$sweepstake, $member]) }}"
+                                        data-confirm-form
+                                        data-confirm-title="Remove entrant"
+                                        data-confirm-message="This will remove the entrant from the sweepstake before the draw."
+                                        data-confirm-label="Remove entrant"
+                                        data-confirm-variant="danger"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges())>Remove entrant</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -124,7 +197,7 @@
                 </div>
             </div>
 
-            <div class="sk-card mt-8 overflow-hidden">
+            <div id="team-selection" class="sk-card mt-8 scroll-mt-6 overflow-hidden">
                 <div class="sk-card-header">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -135,18 +208,67 @@
                         </div>
 
                         @if ($activeDraw)
-                            <details class="w-full sm:w-auto">
-                                <summary class="sk-btn-danger list-none">Re-run draw</summary>
-                                <form method="POST" action="{{ route('sweepstakes.draw.rerun', $sweepstake) }}" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                                    @csrf
-                                    <p class="font-medium text-amber-950">This will replace the active draw and notify entrants with email addresses. Previous draw results will be kept in the draw history.</p>
-                                    <label class="mt-3 block">
-                                        <span class="font-medium text-amber-950">Reason for re-running</span>
-                                        <textarea name="reason" required rows="3" maxlength="1000" class="sk-input">{{ old('reason') }}</textarea>
-                                    </label>
-                                    <button class="sk-btn-primary mt-3">Confirm re-run draw</button>
-                                </form>
-                            </details>
+                            <div class="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
+                                <details class="w-full sm:w-auto">
+                                    <summary class="sk-btn-danger list-none">Re-run draw</summary>
+                                    <form
+                                        method="POST"
+                                        action="{{ route('sweepstakes.draw.rerun', $sweepstake) }}"
+                                        class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm sm:w-[22rem]"
+                                        data-confirm-form
+                                        data-confirm-title="Re-run draw"
+                                        data-confirm-message="This will replace the active draw and notify entrants with email addresses. Previous results will remain in draw history."
+                                        data-confirm-label="Re-run draw"
+                                        data-confirm-variant="danger"
+                                    >
+                                        @csrf
+                                        <p class="font-medium text-amber-950">This will replace the active draw and notify entrants with email addresses. Previous draw results will be kept in the draw history.</p>
+                                        @unless ($hasLeftoverTeams)
+                                            <input type="hidden" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}">
+                                        @endunless
+                                        @if ($hasLeftoverTeams)
+                                            <fieldset class="mt-3 rounded-lg border border-amber-200 bg-white/60 p-3 text-sm text-amber-950">
+                                                <legend class="font-semibold">Leftover teams</legend>
+                                                <label class="mt-2 flex gap-2">
+                                                    <input type="radio" name="leftover_team_strategy" value="{{ $assignLeftoversStrategy }}" required class="mt-1 border-amber-300 text-brand-green">
+                                                    <span>Randomly assign the leftover teams</span>
+                                                </label>
+                                                <label class="mt-2 flex gap-2">
+                                                    <input type="radio" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}" required class="mt-1 border-amber-300 text-brand-green">
+                                                    <span>Remove leftover teams for an even draw</span>
+                                                </label>
+                                            </fieldset>
+                                        @endif
+                                        <label class="mt-3 block">
+                                            <span class="font-medium text-amber-950">Reason for re-running</span>
+                                            <textarea name="reason" required rows="3" maxlength="1000" class="sk-input">{{ old('reason') }}</textarea>
+                                        </label>
+                                        <button class="sk-btn-danger mt-3">Confirm re-run draw</button>
+                                    </form>
+                                </details>
+
+                                <details class="w-full sm:w-auto">
+                                    <summary class="sk-btn-danger list-none">Cancel current draw</summary>
+                                    <form
+                                        method="POST"
+                                        action="{{ route('sweepstakes.draw.cancel', $sweepstake) }}"
+                                        class="mt-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm sm:w-[22rem]"
+                                        data-confirm-form
+                                        data-confirm-title="Cancel current draw"
+                                        data-confirm-message="Cancelling the current draw will reopen setup. The previous draw will remain in draw history for transparency."
+                                        data-confirm-label="Cancel draw"
+                                        data-confirm-variant="danger"
+                                    >
+                                        @csrf
+                                        <p class="font-medium text-red-950">Cancelling the current draw will reopen setup. You can add entrants or change teams, then run a new draw. The previous draw will remain in draw history for transparency.</p>
+                                        <label class="mt-3 block">
+                                            <span class="font-medium text-red-950">Reason for cancelling</span>
+                                            <textarea name="reason" required rows="3" maxlength="1000" class="sk-input">{{ old('reason') }}</textarea>
+                                        </label>
+                                        <button class="sk-btn-danger mt-3">Cancel draw</button>
+                                    </form>
+                                </details>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -172,7 +294,14 @@
                                     </div>
 
                                     @if ($member->join_token)
-                                        <a class="sk-btn-pill" href="{{ route('entrants.show', $member->join_token) }}">View drawn teams</a>
+                                        <div class="flex flex-wrap justify-end gap-2">
+                                            <a class="sk-btn-pill" href="{{ route('entrants.show', $member->join_token) }}">View drawn teams</a>
+                                            <x-copy-button
+                                                :value="route('entrants.show', $member->join_token)"
+                                                label="Copy private team link"
+                                                button-label="Copy link"
+                                            />
+                                        </div>
                                     @endif
                                 </div>
 
@@ -182,10 +311,7 @@
                                             <li class="rounded-lg border border-brand-border bg-brand-soft px-3 py-2 text-sm">
                                                 <div class="flex items-center justify-between gap-3">
                                                     <span class="font-semibold text-brand-navy">
-                                                        @if ($assignment->team->flag)
-                                                            <span aria-hidden="true">{{ $assignment->team->flag }}</span>
-                                                        @endif
-                                                        {{ $assignment->team->name }}
+                                                        <x-team-name :team="$assignment->team" />
                                                     </span>
                                                     <span class="sk-badge sk-badge-blue">Pot {{ $assignment->pot_number ?? 'n/a' }}</span>
                                                 </div>
@@ -206,52 +332,6 @@
                     </div>
                 @endif
 
-                @if ($draws->isNotEmpty())
-                    <div class="border-t border-brand-border px-5 py-4">
-                        <h3 class="font-semibold text-brand-navy">Draw history</h3>
-                        <div class="mt-4 space-y-4">
-                            @foreach ($draws->sortByDesc('version_number') as $draw)
-                                <details class="rounded-lg border border-brand-border bg-brand-soft p-4" {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'open' : '' }}>
-                                    <summary class="list-none">
-                                        <div class="flex flex-wrap items-center justify-between gap-3">
-                                            <div>
-                                                <p class="font-semibold text-brand-navy">Draw #{{ $draw->version_number }} — run on {{ $draw->ran_at->format('j M Y \a\t H:i') }}</p>
-                                                @if ($draw->reason)
-                                                    <p class="mt-1 text-sm text-brand-muted">Reason: {{ $draw->reason }}</p>
-                                                @endif
-                                            </div>
-                                            <span class="sk-badge {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'sk-badge-green' : 'sk-badge-neutral' }}">
-                                                {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'Active draw' : 'Superseded' }}
-                                            </span>
-                                        </div>
-                                    </summary>
-
-                                    <div class="mt-4 grid gap-3">
-                                        @foreach ($sweepstake->members as $member)
-                                            @php
-                                                $drawMemberAssignments = $draw->assignments
-                                                    ->where('sweepstake_member_id', $member->id)
-                                                    ->sortBy(fn ($assignment) => sprintf('%03d-%08d', $assignment->pot_number ?? 0, $assignment->id))
-                                                    ->values();
-                                            @endphp
-
-                                            <div class="rounded-lg border border-brand-border bg-white px-3 py-2 text-sm">
-                                                <p class="font-semibold text-brand-navy">{{ $member->name }}</p>
-                                                @if ($drawMemberAssignments->isNotEmpty())
-                                                    <p class="mt-1 text-brand-muted">
-                                                        {{ $drawMemberAssignments->map(fn ($assignment) => $assignment->team->name . ' (Pot ' . ($assignment->pot_number ?? 'n/a') . ')')->join(', ') }}
-                                                    </p>
-                                                @else
-                                                    <p class="mt-1 text-brand-muted">No teams assigned.</p>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </details>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
             </div>
 
             <div class="sk-card mt-8 overflow-hidden">
@@ -271,7 +351,17 @@
                 </div>
 
                 <div class="grid divide-y divide-brand-border/70 md:grid-cols-2 md:divide-x md:divide-y-0">
-                    <form method="POST" action="{{ route('sweepstakes.teams.bulk.update', $sweepstake) }}" data-bulk-team-form class="flex flex-col">
+                    <form
+                        method="POST"
+                        action="{{ route('sweepstakes.teams.bulk.update', $sweepstake) }}"
+                        data-bulk-team-form
+                        data-confirm-form
+                        data-confirm-title="Remove selected teams"
+                        data-confirm-message="Removed teams will not be included when the draw runs."
+                        data-confirm-label="Remove selected teams"
+                        data-confirm-variant="danger"
+                        class="flex flex-col"
+                    >
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="remove">
@@ -289,10 +379,7 @@
                                     <input type="checkbox" name="team_ids[]" value="{{ $sweepstakeTeam->id }}" class="rounded border-brand-border text-brand-green" @disabled($sweepstake->isLockedForChanges())>
                                     <span class="min-w-0 flex-1">
                                         <span class="font-semibold text-brand-navy">
-                                            @if ($sweepstakeTeam->team->flag)
-                                                <span aria-hidden="true">{{ $sweepstakeTeam->team->flag }}</span>
-                                            @endif
-                                            {{ $sweepstakeTeam->team->name }}
+                                            <x-team-name :team="$sweepstakeTeam->team" />
                                         </span>
                                         <span class="text-brand-muted">#{{ $sweepstakeTeam->team->fifa_ranking ?? 'n/a' }}</span>
                                     </span>
@@ -307,7 +394,16 @@
                         </div>
                     </form>
 
-                    <form method="POST" action="{{ route('sweepstakes.teams.bulk.update', $sweepstake) }}" data-bulk-team-form class="flex flex-col">
+                    <form
+                        method="POST"
+                        action="{{ route('sweepstakes.teams.bulk.update', $sweepstake) }}"
+                        data-bulk-team-form
+                        data-confirm-form
+                        data-confirm-title="Restore selected teams"
+                        data-confirm-message="Restored teams will become available for the next draw."
+                        data-confirm-label="Restore selected teams"
+                        class="flex flex-col"
+                    >
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="action" value="restore">
@@ -325,10 +421,7 @@
                                     <input type="checkbox" name="team_ids[]" value="{{ $sweepstakeTeam->id }}" class="rounded border-brand-border text-brand-blue" @disabled($sweepstake->isLockedForChanges())>
                                     <span class="min-w-0 flex-1">
                                         <span class="font-semibold text-brand-navy">
-                                            @if ($sweepstakeTeam->team->flag)
-                                                <span aria-hidden="true">{{ $sweepstakeTeam->team->flag }}</span>
-                                            @endif
-                                            {{ $sweepstakeTeam->team->name }}
+                                            <x-team-name :team="$sweepstakeTeam->team" />
                                         </span>
                                         <span class="text-brand-muted">#{{ $sweepstakeTeam->team->fifa_ranking ?? 'n/a' }}</span>
                                     </span>
@@ -413,40 +506,131 @@
                 </dl>
             </form>
 
-            <form method="POST" action="{{ route('sweepstakes.prizes.store', $sweepstake) }}" class="sk-card p-5">
-                @csrf
-                <h2 class="font-semibold text-brand-navy">Prize payout</h2>
+            <div class="sk-card p-5">
+                <h2 class="font-semibold text-brand-navy">Prizes</h2>
                 <p class="mt-1 text-sm text-brand-muted">Track payouts without taking payments in SweepKit.</p>
 
-                <div class="mt-4 grid grid-cols-[90px_1fr] gap-3">
-                    <label>
-                        <span class="text-sm font-medium text-brand-navy">Position</span>
-                        <input type="number" name="position" min="1" value="{{ old('position', 1) }}" class="sk-input">
-                    </label>
-                    <label>
-                        <span class="text-sm font-medium text-brand-navy">Label</span>
-                        <input name="label" value="{{ old('label', 'Winner') }}" class="sk-input">
-                    </label>
-                </div>
-
-                <label class="mt-4 block">
-                    <span class="text-sm font-medium text-brand-navy">Amount</span>
-                    <input type="number" name="amount" min="0" step="0.01" value="{{ old('amount', 0) }}" class="sk-input">
-                </label>
-
-                <button class="sk-btn-green mt-5" @disabled($sweepstake->isLockedForChanges())>Save prize</button>
+                <dl class="mt-4 space-y-3 border-y border-brand-border py-4 text-sm">
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-brand-muted">Total prizes</dt>
+                        <dd class="font-semibold text-brand-navy">{{ $sweepstake->currency }} {{ number_format($totalPrizePayout, 2) }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-brand-muted">Collected pot</dt>
+                        <dd class="font-semibold text-brand-navy">{{ $sweepstake->currency }} {{ number_format($sweepstake->collectedPot(), 2) }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-brand-muted">Expected entry pot</dt>
+                        <dd class="font-semibold text-brand-navy">{{ $sweepstake->currency }} {{ number_format($expectedEntryPot, 2) }}</dd>
+                    </div>
+                </dl>
 
                 @if ($sweepstake->prizes->isNotEmpty())
-                    <ul class="mt-5 divide-y divide-brand-border/70 text-sm">
+                    <form method="POST" action="{{ route('sweepstakes.prizes.update', $sweepstake) }}" class="mt-5 space-y-4">
+                        @csrf
+                        @method('PATCH')
+
                         @foreach ($sweepstake->prizes as $prize)
-                            <li class="flex justify-between gap-3 py-2">
-                                <span class="text-brand-navy">{{ $prize->position }}. {{ $prize->label }}</span>
-                                <span class="font-semibold text-brand-navy">{{ $sweepstake->currency }} {{ number_format((float) $prize->amount, 2) }}</span>
-                            </li>
+                            <div class="rounded-lg border border-brand-border bg-brand-soft p-3">
+                                <input type="hidden" name="prizes[{{ $prize->id }}][id]" value="{{ $prize->id }}">
+                                <div class="grid grid-cols-[76px_1fr] gap-3">
+                                    <label>
+                                        <span class="text-sm font-medium text-brand-navy">Position</span>
+                                        <input type="number" name="prizes[{{ $prize->id }}][position]" min="1" max="48" value="{{ old("prizes.{$prize->id}.position", $prize->position) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                    </label>
+                                    <label>
+                                        <span class="text-sm font-medium text-brand-navy">Label</span>
+                                        <input name="prizes[{{ $prize->id }}][label]" value="{{ old("prizes.{$prize->id}.label", $prize->label) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                    </label>
+                                </div>
+                                <label class="mt-3 block">
+                                    <span class="text-sm font-medium text-brand-navy">Prize amount</span>
+                                    <input type="number" name="prizes[{{ $prize->id }}][amount]" min="0" step="0.01" value="{{ old("prizes.{$prize->id}.amount", (float) $prize->amount) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                </label>
+                            </div>
                         @endforeach
-                    </ul>
+
+                        <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges())>Save prizes</button>
+                    </form>
+
+                    <div class="mt-4 space-y-2 border-t border-brand-border pt-4">
+                        @foreach ($sweepstake->prizes as $prize)
+                            <form
+                                method="POST"
+                                action="{{ route('sweepstakes.prizes.destroy', [$sweepstake, $prize]) }}"
+                                data-confirm-form
+                                data-confirm-title="Remove prize"
+                                data-confirm-message="This will remove {{ $prize->label }} from the prize list before the draw."
+                                data-confirm-label="Remove prize"
+                                data-confirm-variant="danger"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges())>Remove {{ $prize->label }}</button>
+                            </form>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="mt-5 text-sm text-brand-muted">No prizes yet.</p>
                 @endif
-            </form>
+
+                <form method="POST" action="{{ route('sweepstakes.prizes.store', $sweepstake) }}" class="mt-5 border-t border-brand-border pt-5">
+                    @csrf
+                    <h3 class="font-semibold text-brand-navy">Add prize</h3>
+                    <div class="mt-3 grid grid-cols-[76px_1fr] gap-3">
+                        <label>
+                            <span class="text-sm font-medium text-brand-navy">Position</span>
+                            <input type="number" name="position" min="1" max="48" value="{{ old('position', $sweepstake->prizes->count() + 1) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                        </label>
+                        <label>
+                            <span class="text-sm font-medium text-brand-navy">Label</span>
+                            <input name="label" value="{{ old('label', $sweepstake->prizes->isEmpty() ? 'Winner' : 'Runner-up') }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                        </label>
+                    </div>
+
+                    <label class="mt-3 block">
+                        <span class="text-sm font-medium text-brand-navy">Prize amount</span>
+                        <input type="number" name="amount" min="0" step="0.01" value="{{ old('amount', 0) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                    </label>
+
+                    <button class="sk-btn-green mt-4" @disabled($sweepstake->isLockedForChanges())>Add prize</button>
+                </form>
+            </div>
+
+            <div class="sk-card p-5">
+                <h2 class="font-semibold text-brand-navy">Draw history</h2>
+
+                @if ($draws->isEmpty())
+                    <p class="mt-3 text-sm text-brand-muted">No draws yet. History will appear here after the first draw.</p>
+                @else
+                    <div class="mt-4 space-y-3">
+                        @foreach ($draws->sortByDesc('version_number') as $draw)
+                            <div class="rounded-lg border border-brand-border bg-brand-soft p-3 text-sm">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                        <p class="font-semibold text-brand-navy">Draw #{{ $draw->version_number }}</p>
+                                        <p class="mt-1 text-brand-muted">{{ $draw->ran_at->format('j M Y \a\t H:i') }}</p>
+                                    </div>
+                                    <span class="sk-badge {{ $draw->status === \App\Models\SweepstakeDraw::STATUS_ACTIVE ? 'sk-badge-green' : ($draw->status === \App\Models\SweepstakeDraw::STATUS_CANCELLED ? 'sk-badge-amber' : 'sk-badge-neutral') }}">
+                                        {{ $draw->statusLabel() }}
+                                    </span>
+                                </div>
+
+                                <p class="mt-2 text-brand-muted">{{ $draw->assignments->count() }} {{ \Illuminate\Support\Str::plural('assignment', $draw->assignments->count()) }}</p>
+                                @if ($draw->leftover_strategy)
+                                    <p class="mt-1 text-brand-muted">{{ $draw->leftoverStrategyLabel() }}</p>
+                                @endif
+                                @if ($draw->reason)
+                                    <p class="mt-2 text-brand-muted">Reason: {{ $draw->reason }}</p>
+                                @endif
+                                @if ($draw->cancelled_reason)
+                                    <p class="mt-2 text-brand-muted">Cancellation reason: {{ $draw->cancelled_reason }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
         </aside>
     </div>
 @endsection

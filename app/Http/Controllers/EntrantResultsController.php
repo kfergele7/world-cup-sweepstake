@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeMember;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class EntrantResultsController extends Controller
 {
-    public function __invoke(string $joinToken): View
+    public function __invoke(Request $request, string $joinToken): View
     {
         $member = SweepstakeMember::query()
             ->where('join_token', $joinToken)
@@ -32,6 +33,7 @@ class EntrantResultsController extends Controller
             'sweepstake' => $member->sweepstake,
             'activeDraw' => $activeDraw,
             'draws' => $draws,
+            'canViewAdminLinks' => $request->user()?->id === $member->sweepstake->user_id,
             'assignments' => ($activeDraw?->assignments ?? collect())
                 ->sortBy(fn ($assignment): string => sprintf('%03d-%08d', $assignment->pot_number ?? 0, $assignment->id))
                 ->values(),

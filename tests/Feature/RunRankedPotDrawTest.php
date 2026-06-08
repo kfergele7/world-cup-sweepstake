@@ -52,6 +52,7 @@ class RunRankedPotDrawTest extends TestCase
             'version_number' => 1,
             'status' => SweepstakeDraw::STATUS_ACTIVE,
             'reason' => null,
+            'leftover_strategy' => SweepstakeDraw::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED,
         ]);
         $this->assertDatabaseCount('team_assignments', 9);
 
@@ -93,9 +94,40 @@ class RunRankedPotDrawTest extends TestCase
         $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 2);
 
         $this->expectException(DrawException::class);
-        $this->expectExceptionMessage('not enough selected teams');
+        $this->expectExceptionMessage('Remove entrants or restore teams before running the draw.');
 
         app(RunRankedPotDraw::class)->handle($sweepstake);
+    }
+
+    public function test_it_assigns_leftover_teams_randomly_when_requested(): void
+    {
+        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 10);
+
+        $assignments = app(RunRankedPotDraw::class)->handle(
+            $sweepstake,
+            leftoverStrategy: SweepstakeDraw::LEFTOVER_STRATEGY_ASSIGN_RANDOMLY,
+        );
+
+        $this->assertCount(10, $assignments);
+        $this->assertSame(10, TeamAssignment::where('sweepstake_id', $sweepstake->id)->count());
+        $this->assertSame(0, $sweepstake->sweepstakeTeams()->where('is_removed', true)->count());
+
+        $memberAssignmentCounts = TeamAssignment::where('sweepstake_id', $sweepstake->id)
+            ->get()
+            ->groupBy('sweepstake_member_id')
+            ->map->count()
+            ->sort()
+            ->values()
+            ->all();
+
+        $this->assertSame([3, 3, 4], $memberAssignmentCounts);
+        $this->assertDatabaseHas('sweepstake_draws', [
+            'sweepstake_id' => $sweepstake->id,
+            'leftover_strategy' => SweepstakeDraw::LEFTOVER_STRATEGY_ASSIGN_RANDOMLY,
+            'selected_team_count' => 10,
+            'base_teams_per_member' => 3,
+            'leftover_team_count' => 1,
+        ]);
     }
 
     public function test_it_rejects_a_second_draw_without_reset(): void

@@ -12,6 +12,9 @@
 <ul>
     @foreach ($assignments as $assignment)
         <li>
+            @if ($assignment->team->displayFlag())
+                {{ $assignment->team->displayFlag() }}
+            @endif
             {{ $assignment->team->name }}
             @if ($assignment->pot_number)
                 (Pot {{ $assignment->pot_number }})

@@ -79,7 +79,11 @@ class SweepstakeResultsTest extends TestCase
             ->get(route('sweepstakes.show', $sweepstake))
             ->assertOk()
             ->assertSee('View team page')
+            ->assertSee('Copy link')
+            ->assertSee('data-copy-button', false)
+            ->assertSee('data-manage-toggle', false)
             ->assertSee('Manage')
+            ->assertSee('Cancel')
             ->assertDontSeeText(route('entrants.show', $member->join_token))
             ->assertSee(route('entrants.show', $member->join_token), false);
     }
@@ -99,8 +103,10 @@ class SweepstakeResultsTest extends TestCase
         $this->get(route('entrants.show', $member->join_token))
             ->assertOk()
             ->assertSee($sweepstake->name)
+            ->assertSee('Entrant teams')
             ->assertSee('Link Entrant')
             ->assertSeeText("You're entered. Your teams will appear here after the draw.")
+            ->assertDontSee('Dashboard')
             ->assertDontSee('link@example.test')
             ->assertDontSee('Run ranked pot draw');
     }
@@ -123,6 +129,7 @@ class SweepstakeResultsTest extends TestCase
             ->assertSee('Your teams are ready')
             ->assertSee('Active draw #1')
             ->assertSee('Team 1')
+            ->assertSee('Flag 1')
             ->assertSee('Pot 1')
             ->assertDontSee('Team 2')
             ->assertDontSee('alice@example.test')
@@ -188,6 +195,71 @@ class SweepstakeResultsTest extends TestCase
             ->assertOk()
             ->assertSee('Manual Entrant')
             ->assertSeeText("You're entered. Your teams will appear here after the draw.");
+    }
+
+    public function test_authenticated_owner_gets_admin_breadcrumb_links_on_entrant_page(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $member = $this->createMember($sweepstake, 'Manual Entrant', token: 'manual-token');
+
+        $this->actingAs($admin)
+            ->get(route('entrants.show', $member->join_token))
+            ->assertOk()
+            ->assertSee('Dashboard')
+            ->assertSee(route('sweepstakes.show', $sweepstake), false)
+            ->assertSee('Entrant teams');
+    }
+
+    public function test_team_names_render_flags_from_country_codes_and_unknown_codes_do_not_break(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $alice = $this->createMember($sweepstake, 'Alice Adams', token: 'alice-token');
+        $bob = $this->createMember($sweepstake, 'Bob Brown', token: 'bob-token');
+        $teams = Team::orderBy('id')->get();
+
+        $teams[0]->update([
+            'name' => 'Argentina',
+            'country_code' => 'ARG',
+            'flag' => null,
+        ]);
+        $teams[1]->update([
+            'name' => 'Unknown Team',
+            'country_code' => 'ZZZ',
+            'flag' => null,
+        ]);
+
+        $this->drawSweepstake($sweepstake, [
+            [$alice, $teams[0]->fresh(), 1],
+            [$bob, $teams[1]->fresh(), 1],
+        ]);
+
+        $this->get(route('entrants.show', $alice->join_token))
+            ->assertOk()
+            ->assertSee('🇦🇷')
+            ->assertSee('Argentina')
+            ->assertDontSee('Unknown Team');
+
+        $this->get(route('entrants.show', $bob->join_token))
+            ->assertOk()
+            ->assertSee('Unknown Team');
+    }
+
+    public function test_admin_page_includes_confirmation_hooks_for_important_actions(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 4);
+        $this->createMember($sweepstake, 'Alice Adams');
+        $this->createMember($sweepstake, 'Bob Brown');
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('data-confirm-form', false)
+            ->assertSee('data-confirm-title="Run draw"', false)
+            ->assertSee('data-confirm-title="Remove entrant"', false)
+            ->assertSee('data-confirm-title="Remove selected teams"', false);
     }
 
     private function createUser(string $email): User

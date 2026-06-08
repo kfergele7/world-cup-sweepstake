@@ -42,8 +42,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/sweepstakes/{sweepstake}/teams', [SweepstakeTeamController::class, 'bulkUpdate'])->name('sweepstakes.teams.bulk.update');
     Route::patch('/sweepstakes/{sweepstake}/teams/{sweepstakeTeam}', [SweepstakeTeamController::class, 'update'])->name('sweepstakes.teams.update');
     Route::post('/sweepstakes/{sweepstake}/prizes', [PrizeController::class, 'store'])->name('sweepstakes.prizes.store');
+    Route::patch('/sweepstakes/{sweepstake}/prizes', [PrizeController::class, 'update'])->name('sweepstakes.prizes.update');
+    Route::delete('/sweepstakes/{sweepstake}/prizes/{prize}', [PrizeController::class, 'destroy'])->name('sweepstakes.prizes.destroy');
     Route::post('/sweepstakes/{sweepstake}/draw', [SweepstakeDrawController::class, 'store'])->name('sweepstakes.draw.store');
     Route::post('/sweepstakes/{sweepstake}/draw/rerun', [SweepstakeDrawController::class, 'rerun'])->name('sweepstakes.draw.rerun');
+    Route::post('/sweepstakes/{sweepstake}/draw/cancel', [SweepstakeDrawController::class, 'cancel'])->name('sweepstakes.draw.cancel');
 });
 
 Route::get('/join/{joinCode}', [JoinSweepstakeController::class, 'show'])->name('join.show');

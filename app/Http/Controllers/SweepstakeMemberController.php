@@ -21,6 +21,12 @@ class SweepstakeMemberController extends Controller
             ]);
         }
 
+        if ($capacityMessage = $this->capacityErrorMessage($sweepstake)) {
+            return back()->withErrors([
+                'member' => $capacityMessage,
+            ]);
+        }
+
         $attributes = $this->validatedMemberAttributes($request, $sweepstake);
 
         SweepstakeMember::create([
@@ -133,5 +139,20 @@ class SweepstakeMemberController extends Controller
     private function normaliseEmail(?string $email): ?string
     {
         return $email ? Str::lower($email) : null;
+    }
+
+    private function capacityErrorMessage(Sweepstake $sweepstake): ?string
+    {
+        $entrantCount = $sweepstake->entrants()->count();
+
+        if ($entrantCount >= Sweepstake::MAX_ENTRANTS) {
+            return 'A sweepstake can have up to 48 entrants.';
+        }
+
+        if ($entrantCount >= $sweepstake->includedTeamCount()) {
+            return 'There must be at least one team available for every entrant.';
+        }
+
+        return null;
     }
 }

@@ -31,6 +31,12 @@ class JoinSweepstakeController extends Controller
             ]);
         }
 
+        if ($capacityMessage = $this->capacityErrorMessage($sweepstake)) {
+            return back()->withErrors([
+                'name' => $capacityMessage,
+            ]);
+        }
+
         $attributes = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -53,5 +59,20 @@ class JoinSweepstakeController extends Controller
 
         return redirect()->route('entrants.show', $member->join_token)
             ->with('status', "Thanks {$member->name}. You are entered in the sweepstake.");
+    }
+
+    private function capacityErrorMessage(Sweepstake $sweepstake): ?string
+    {
+        $entrantCount = $sweepstake->entrants()->count();
+
+        if ($entrantCount >= Sweepstake::MAX_ENTRANTS) {
+            return 'A sweepstake can have up to 48 entrants.';
+        }
+
+        if ($entrantCount >= $sweepstake->includedTeamCount()) {
+            return 'There must be at least one team available for every entrant.';
+        }
+
+        return null;
     }
 }

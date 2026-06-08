@@ -26,6 +26,8 @@ class Sweepstake extends Model
 {
     use HasFactory;
 
+    public const MAX_ENTRANTS = 48;
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_OPEN = 'open';
@@ -112,8 +114,28 @@ class Sweepstake extends Model
         ], true);
     }
 
+    public function includedTeamCount(): int
+    {
+        return $this->selectedSweepstakeTeams()->count();
+    }
+
+    public function maximumEntrants(): int
+    {
+        return min(self::MAX_ENTRANTS, $this->includedTeamCount());
+    }
+
+    public function canAddEntrant(): bool
+    {
+        return $this->entrants()->count() < $this->maximumEntrants();
+    }
+
     public function collectedPot(): float
     {
         return (float) $this->entry_fee * $this->paidMembers()->count();
+    }
+
+    public function totalPrizePayout(): float
+    {
+        return (float) $this->prizes()->sum('amount');
     }
 }

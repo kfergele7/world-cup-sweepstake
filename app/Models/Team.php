@@ -20,6 +20,67 @@ class Team extends Model
 {
     use HasFactory;
 
+    /**
+     * @var array<string, string>
+     */
+    private const FIFA_CODE_TO_ISO2 = [
+        'ALG' => 'DZ',
+        'ARG' => 'AR',
+        'AUS' => 'AU',
+        'AUT' => 'AT',
+        'BEL' => 'BE',
+        'BIH' => 'BA',
+        'BRA' => 'BR',
+        'CAN' => 'CA',
+        'CIV' => 'CI',
+        'COD' => 'CD',
+        'COL' => 'CO',
+        'CPV' => 'CV',
+        'CRO' => 'HR',
+        'CZE' => 'CZ',
+        'CUW' => 'CW',
+        'ECU' => 'EC',
+        'EGY' => 'EG',
+        'ESP' => 'ES',
+        'FRA' => 'FR',
+        'GER' => 'DE',
+        'GHA' => 'GH',
+        'HAI' => 'HT',
+        'IRN' => 'IR',
+        'IRQ' => 'IQ',
+        'JOR' => 'JO',
+        'JPN' => 'JP',
+        'KOR' => 'KR',
+        'KSA' => 'SA',
+        'MAR' => 'MA',
+        'MEX' => 'MX',
+        'NED' => 'NL',
+        'NOR' => 'NO',
+        'NZL' => 'NZ',
+        'PAN' => 'PA',
+        'PAR' => 'PY',
+        'POR' => 'PT',
+        'QAT' => 'QA',
+        'RSA' => 'ZA',
+        'SEN' => 'SN',
+        'SUI' => 'CH',
+        'SWE' => 'SE',
+        'TUN' => 'TN',
+        'TUR' => 'TR',
+        'URU' => 'UY',
+        'USA' => 'US',
+        'UZB' => 'UZ',
+    ];
+
+    /**
+     * @var array<string, string>
+     */
+    private const FOOTBALL_NATION_FLAGS = [
+        'ENG' => '🏴',
+        'SCO' => '🏴',
+        'WAL' => '🏴',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -37,5 +98,26 @@ class Team extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(TeamAssignment::class);
+    }
+
+    public function displayFlag(): ?string
+    {
+        if ($this->flag) {
+            return $this->flag;
+        }
+
+        $code = str($this->country_code)->upper()->toString();
+
+        if (isset(self::FOOTBALL_NATION_FLAGS[$code])) {
+            return self::FOOTBALL_NATION_FLAGS[$code];
+        }
+
+        $iso2 = strlen($code) === 2 ? $code : (self::FIFA_CODE_TO_ISO2[$code] ?? null);
+
+        if (! $iso2 || strlen($iso2) !== 2) {
+            return null;
+        }
+
+        return mb_chr(127397 + ord($iso2[0])).mb_chr(127397 + ord($iso2[1]));
     }
 }

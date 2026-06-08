@@ -52,5 +52,18 @@
 
             @yield('content')
         </main>
+
+        <dialog id="confirm-dialog" class="w-[min(92vw,28rem)] rounded-lg border border-brand-border bg-white p-0 text-brand-navy shadow-xl backdrop:bg-brand-navy/50">
+            <div class="p-5">
+                <h2 class="text-lg font-bold text-brand-navy" data-confirm-title>Are you sure?</h2>
+                <p class="mt-2 text-sm leading-6 text-brand-muted" data-confirm-message>Please confirm this action.</p>
+                <div class="mt-5 flex flex-wrap justify-end gap-2">
+                    <form method="dialog">
+                        <button class="sk-btn-secondary" value="cancel">Cancel</button>
+                    </form>
+                    <button type="button" class="sk-btn-green" data-confirm-submit>Confirm</button>
+                </div>
+            </div>
+        </dialog>
     </body>
 </html>
