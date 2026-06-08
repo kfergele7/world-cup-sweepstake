@@ -6,7 +6,7 @@ The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation fo
 
 The ranked pot draw is implemented and covered by automated feature tests. Draws now include all entrants, with paid/unpaid kept as an admin tracking field. Local SQLite has been migrated and seeded.
 
-This pass added the 48-entrant and included-team capacity rules, explicit leftover team draw options, cancel/reopen setup for active draws, editable/removable prize rows with payout totals, copy buttons for join/private links, flag rendering beside team names, confirmation modals for important actions, safer entrant-page breadcrumbs, a fixed Manage/Cancel entrant-card layout and a compact right-sidebar draw history panel.
+This pass fixed football-specific national flag display so England, Scotland, Wales and Northern Ireland use compact safe text labels instead of the broken black-flag emoji, while standard country codes still render normal flag emoji.
 
 ## Files And Areas Touched
 
@@ -21,6 +21,7 @@ This pass added the 48-entrant and included-team capacity rules, explicit leftov
 - Brand tokens and component classes: `resources/css/app.css`.
 - Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components and lightweight JS for bulk counts, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
 - Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
+- Flag helper tests: `tests/Unit/TeamFlagTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
 
 ## Setup Steps
@@ -66,7 +67,7 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - Attempted authenticated browser smoke test for the entrant UI; the in-app Browser loaded the app but text entry was blocked by a missing virtual clipboard in the browser plugin. Authenticated flows are covered by Laravel feature tests.
 - Attempted to discover the in-app Browser control tool for this pass, but it was not exposed in this thread. Browser-level verification was limited to automated Laravel feature tests and `npm run build`.
 
-Current passing test result: 61 tests, 306 assertions.
+Current passing test result: 65 tests, 318 assertions.
 
 ## Known Issues Or Blockers
 

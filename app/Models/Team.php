@@ -75,10 +75,11 @@ class Team extends Model
     /**
      * @var array<string, string>
      */
-    private const FOOTBALL_NATION_FLAGS = [
-        'ENG' => '🏴',
-        'SCO' => '🏴',
-        'WAL' => '🏴',
+    private const FOOTBALL_NATION_LABELS = [
+        'ENG' => 'ENG',
+        'NIR' => 'NI',
+        'SCO' => 'SCO',
+        'WAL' => 'WAL',
     ];
 
     protected function casts(): array
@@ -102,14 +103,16 @@ class Team extends Model
 
     public function displayFlag(): ?string
     {
-        if ($this->flag) {
-            return $this->flag;
+        $storedFlag = $this->validStoredFlag();
+
+        if ($storedFlag) {
+            return $storedFlag;
         }
 
         $code = str($this->country_code)->upper()->toString();
 
-        if (isset(self::FOOTBALL_NATION_FLAGS[$code])) {
-            return self::FOOTBALL_NATION_FLAGS[$code];
+        if (isset(self::FOOTBALL_NATION_LABELS[$code])) {
+            return self::FOOTBALL_NATION_LABELS[$code];
         }
 
         $iso2 = strlen($code) === 2 ? $code : (self::FIFA_CODE_TO_ISO2[$code] ?? null);
@@ -119,5 +122,20 @@ class Team extends Model
         }
 
         return mb_chr(127397 + ord($iso2[0])).mb_chr(127397 + ord($iso2[1]));
+    }
+
+    private function validStoredFlag(): ?string
+    {
+        if (! $this->flag) {
+            return null;
+        }
+
+        $flag = str($this->flag)->trim()->toString();
+
+        if ($flag === '' || str_contains($flag, '🏴')) {
+            return null;
+        }
+
+        return $flag;
     }
 }
