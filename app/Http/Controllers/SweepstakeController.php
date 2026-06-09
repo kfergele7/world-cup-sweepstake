@@ -140,7 +140,7 @@ class SweepstakeController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')->withErrors([
                 'settings' => 'Sweepstake settings are locked after the draw.',
             ]);
         }
@@ -175,7 +175,8 @@ class SweepstakeController extends Controller
             'pot_mode' => $attributes['pot_mode'],
         ]);
 
-        return back()->with('status', 'Sweepstake settings saved.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')
+            ->with('status', 'Sweepstake settings saved.');
     }
 
     private function uniqueSlug(string $name): string

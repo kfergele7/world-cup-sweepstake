@@ -138,7 +138,7 @@ class SweepstakeTeamManagementTest extends TestCase
                 'action' => 'remove',
                 'team_ids' => [$team->id],
             ])
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'teams']))
             ->assertSessionHasErrors('team');
 
         $this->assertDatabaseHas('sweepstake_teams', [

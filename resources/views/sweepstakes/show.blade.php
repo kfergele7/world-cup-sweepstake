@@ -10,6 +10,16 @@
         $customPotDrawnTeamCount = $customPotSummaries->sum('drawn_team_count');
         $customPotUnusedTeamCount = $customPotSummaries->sum('unused_team_count');
         $totalAssignedCustomPotTeams = $customPotSummaries->sum('assigned_team_count');
+        $tabs = [
+            'overview' => 'Overview',
+            'entrants' => 'Entrants',
+            'teams' => 'Teams',
+            'pots' => 'Pots',
+            'draw-results' => 'Draw & Results',
+            'settings-prizes' => 'Settings & Prizes',
+        ];
+        $requestedTab = old('tab', request('tab', session('active_tab', 'overview')));
+        $activeTab = array_key_exists($requestedTab, $tabs) ? $requestedTab : 'overview';
         $nextStep = match (true) {
             $memberCount < 2 => 'Add at least two entrants before running the draw.',
             $isCustomPotMode && $sweepstake->pots->isEmpty() => 'Create custom pots, then assign teams to them.',
@@ -37,7 +47,7 @@
             @if ($activeDraw)
                 <p class="sk-badge sk-badge-green px-4 py-2 text-sm">Active draw #{{ $activeDraw->version_number }}</p>
             @else
-                <a href="#draw-results" class="sk-btn-green">Go to draw</a>
+                <a href="{{ route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'draw-results']) }}" class="sk-btn-green">Go to draw</a>
             @endif
         </div>
 
@@ -56,20 +66,21 @@
             </div>
         @endif
 
-        <div class="mt-8" data-tabs data-default-tab="overview">
+        <div class="mt-8" data-tabs data-default-tab="overview" data-active-tab="{{ $activeTab }}">
             <nav class="flex gap-2 overflow-x-auto rounded-lg border border-brand-border bg-white p-2 text-sm" aria-label="Sweepstake admin sections">
-                @foreach ([
-                    'overview' => 'Overview',
-                    'entrants' => 'Entrants',
-                    'teams' => 'Teams',
-                    'pots' => 'Pots',
-                    'draw-results' => 'Draw & Results',
-                    'settings-prizes' => 'Settings & Prizes',
-                ] as $tabId => $tabLabel)
+                @foreach ($tabs as $tabId => $tabLabel)
+                    @php
+                        $isActiveTab = $activeTab === $tabId;
+                    @endphp
                     <a
-                        href="#{{ $tabId }}"
-                        class="shrink-0 rounded-lg border border-brand-border bg-white px-3 py-2 font-semibold text-brand-muted transition hover:border-brand-blue/40 hover:bg-brand-blue/5"
+                        href="{{ route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => $tabId]) }}"
+                        @class([
+                            'shrink-0 rounded-lg border px-3 py-2 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/40',
+                            'border-brand-navy bg-brand-navy text-white hover:border-brand-navy hover:bg-brand-navy hover:text-white' => $isActiveTab,
+                            'border-brand-border bg-white text-brand-muted hover:border-brand-blue/40 hover:bg-brand-blue/5 hover:text-brand-navy' => ! $isActiveTab,
+                        ])
                         data-tab-target="{{ $tabId }}"
+                        aria-current="{{ $isActiveTab ? 'page' : 'false' }}"
                     >
                         {{ $tabLabel }}
                     </a>
@@ -144,6 +155,7 @@
 
                     <form method="POST" action="{{ route('sweepstakes.members.store', $sweepstake) }}" class="grid gap-3 border-b border-brand-border bg-brand-soft px-5 py-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
                         @csrf
+                        <input type="hidden" name="tab" value="entrants">
                         <label>
                             <span class="text-sm font-medium text-brand-navy">Name</span>
                             <input name="name" value="{{ old('name') }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
@@ -203,6 +215,7 @@
                                     <form id="member-edit-{{ $member->id }}" method="POST" action="{{ route('sweepstakes.members.update', [$sweepstake, $member]) }}" class="grid gap-3 sm:grid-cols-2">
                                         @csrf
                                         @method('PATCH')
+                                        <input type="hidden" name="tab" value="entrants">
                                         <label>
                                             <span class="text-sm font-medium text-brand-navy">Name</span>
                                             <input name="name" value="{{ old('name', $member->name) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
@@ -219,6 +232,7 @@
                                         <form method="POST" action="{{ route('sweepstakes.members.payment.update', [$sweepstake, $member]) }}">
                                             @csrf
                                             @method('PATCH')
+                                            <input type="hidden" name="tab" value="entrants">
                                             <input type="hidden" name="is_paid" value="{{ $member->is_paid ? 0 : 1 }}">
                                             <button class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges())>
                                                 {{ $member->is_paid ? 'Mark as unpaid' : 'Mark as paid' }}
@@ -238,6 +252,7 @@
                                         >
                                             @csrf
                                             @method('DELETE')
+                                            <input type="hidden" name="tab" value="entrants">
                                             <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges())>Remove entrant</button>
                                         </form>
                                     </div>
@@ -283,6 +298,7 @@
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="tab" value="teams">
 
                             <div class="border-b border-brand-border bg-green-50/50 px-5 py-4">
                                 <h3 class="font-semibold text-brand-navy">Included teams</h3>
@@ -325,6 +341,7 @@
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="action" value="restore">
+                            <input type="hidden" name="tab" value="teams">
 
                             <div class="border-b border-brand-border bg-blue-50/50 px-5 py-4">
                                 <h3 class="font-semibold text-brand-navy">Removed teams</h3>
@@ -364,7 +381,7 @@
                         <p class="mt-1 text-sm text-brand-muted">SweepKit will create pots automatically using stored rankings.</p>
                         <p class="mt-3 text-sm text-brand-muted">Auto pots use the included teams from the Teams tab. If the teams do not divide evenly by entrants, choose a leftover team option when you run the draw.</p>
                         @if (! $sweepstake->isLockedForChanges())
-                            <a href="#settings-prizes" class="sk-btn-secondary mt-4 inline-flex">Switch to Custom pots in settings</a>
+                            <a href="{{ route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'settings-prizes']) }}" class="sk-btn-secondary mt-4 inline-flex">Switch to Custom pots in settings</a>
                         @endif
                     </div>
                 @else
@@ -413,6 +430,7 @@
                             <div class="p-5">
                                 <form method="POST" action="{{ route('sweepstakes.pots.store', $sweepstake) }}" class="rounded-lg border border-brand-border bg-brand-soft p-4">
                                     @csrf
+                                    <input type="hidden" name="tab" value="pots">
                                     <h3 class="font-semibold text-brand-navy">Add pot</h3>
                                     <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_9rem]">
                                         <label class="block">
@@ -448,6 +466,7 @@
                                             <form method="POST" action="{{ route('sweepstakes.pots.update', [$sweepstake, $pot]) }}" class="grid gap-3 sm:grid-cols-[5rem_1fr_10rem_auto] sm:items-end">
                                                 @csrf
                                                 @method('PATCH')
+                                                <input type="hidden" name="tab" value="pots">
                                                 <label>
                                                     <span class="text-sm font-medium text-brand-navy">Order</span>
                                                     <input type="number" name="position" min="1" max="99" value="{{ old("pots.{$pot->id}.position", $pot->position) }}" required class="sk-input" @disabled($sweepstake->isLockedForChanges())>
@@ -494,6 +513,7 @@
                                             >
                                                 @csrf
                                                 @method('DELETE')
+                                                <input type="hidden" name="tab" value="pots">
                                                 <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges() || $pot->potTeams->isNotEmpty())>Delete empty pot</button>
                                             </form>
                                         </div>
@@ -503,43 +523,77 @@
                                 </div>
                             </div>
 
-                            <form method="POST" action="{{ route('sweepstakes.pots.assignments', $sweepstake) }}" class="flex flex-col">
-                                @csrf
-                                @method('PATCH')
+                            <div class="flex flex-col">
+                                <form id="pot-assignment-form" method="POST" action="{{ route('sweepstakes.pots.assignments', $sweepstake) }}" class="hidden">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="tab" value="pots">
+                                </form>
 
-                                <div class="border-b border-brand-border bg-blue-50/50 px-5 py-4">
-                                    <h3 class="font-semibold text-brand-navy">Team pot assignments</h3>
-                                    <p class="mt-1 text-sm text-brand-muted">Assign teams to pots if you want them to be eligible for the custom draw.</p>
-                                    <p class="mt-1 text-sm text-brand-muted">Teams left as Unassigned will not be used in a custom draw. Removed teams are never included in the draw.</p>
-                                </div>
+                                <form method="POST" action="{{ route('sweepstakes.pots.bulk-assignments', $sweepstake) }}" class="flex flex-col" data-bulk-pot-form>
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="tab" value="pots">
 
-                                <div class="max-h-[36rem] flex-1 overflow-y-auto divide-y divide-brand-border/70">
-                                    @forelse ($selectedTeams as $sweepstakeTeam)
-                                        @php
-                                            $selectedPotId = old("assignments.{$sweepstakeTeam->id}", $sweepstakeTeam->potAssignment?->sweepstake_pot_id);
-                                        @endphp
+                                    <div class="border-b border-brand-border bg-blue-50/50 px-5 py-4">
+                                        <h3 class="font-semibold text-brand-navy">Team pot assignments</h3>
+                                        <p class="mt-1 text-sm text-brand-muted">Select multiple teams and move them into a pot in one go. Unassigned teams will not be used in a custom draw.</p>
+                                        <p class="mt-1 text-sm text-brand-muted">Removed teams are never included in the draw.</p>
+                                    </div>
 
-                                        <label class="grid gap-3 px-5 py-3 text-sm transition hover:bg-blue-50/70 sm:grid-cols-[1fr_13rem] sm:items-center">
-                                            <span class="min-w-0 font-semibold text-brand-navy">
-                                                <x-team-name :team="$sweepstakeTeam->team" />
-                                                <span class="text-brand-muted">#{{ $sweepstakeTeam->team->fifa_ranking ?? 'n/a' }}</span>
-                                            </span>
-                                            <select name="assignments[{{ $sweepstakeTeam->id }}]" class="sk-input" @disabled($sweepstake->isLockedForChanges() || $sweepstake->pots->isEmpty())>
-                                                <option value="">Unassigned</option>
-                                                @foreach ($sweepstake->pots as $pot)
-                                                    <option value="{{ $pot->id }}" @selected((string) $selectedPotId === (string) $pot->id)>{{ $pot->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                    @empty
-                                        <p class="px-5 py-4 text-sm text-brand-muted">No included teams available.</p>
-                                    @endforelse
-                                </div>
+                                    <div class="sticky top-0 z-10 border-b border-brand-border bg-white px-5 py-4 shadow-sm shadow-brand-navy/5">
+                                        <div class="grid gap-3 lg:grid-cols-[1fr_13rem_auto_auto] lg:items-end">
+                                            <p class="rounded-lg border border-brand-border bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-navy">
+                                                <span data-selected-count>0</span> selected
+                                            </p>
+                                            <label>
+                                                <span class="text-sm font-medium text-brand-navy">Move to pot</span>
+                                                <select name="target_pot_id" class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                                    <option value="">Move to Unassigned</option>
+                                                    @foreach ($sweepstake->pots as $pot)
+                                                        <option value="{{ $pot->id }}">{{ $pot->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </label>
+                                            <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges() || $selectedTeams->isEmpty())>Move selected teams</button>
+                                            <button type="button" class="sk-btn-secondary" data-clear-selection @disabled($sweepstake->isLockedForChanges() || $selectedTeams->isEmpty())>Clear selection</button>
+                                        </div>
+                                    </div>
 
-                                <div class="border-t border-brand-border px-5 py-4">
-                                    <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges() || $sweepstake->pots->isEmpty())>Save pot assignments</button>
-                                </div>
-                            </form>
+                                    <div class="max-h-[36rem] flex-1 overflow-y-auto divide-y divide-brand-border/70">
+                                        @forelse ($selectedTeams as $sweepstakeTeam)
+                                            @php
+                                                $selectedPotId = old("assignments.{$sweepstakeTeam->id}", $sweepstakeTeam->potAssignment?->sweepstake_pot_id);
+                                            @endphp
+
+                                            <div class="grid gap-3 px-5 py-3 text-sm transition hover:bg-blue-50/70 sm:grid-cols-[1fr_13rem] sm:items-center">
+                                                <label for="bulk-team-{{ $sweepstakeTeam->id }}" class="flex min-w-0 items-center gap-3">
+                                                    <input id="bulk-team-{{ $sweepstakeTeam->id }}" type="checkbox" name="team_ids[]" value="{{ $sweepstakeTeam->id }}" class="size-5 rounded border-brand-border text-brand-green" @disabled($sweepstake->isLockedForChanges())>
+                                                    <span class="min-w-0 font-semibold text-brand-navy">
+                                                        <x-team-name :team="$sweepstakeTeam->team" />
+                                                        <span class="text-brand-muted">#{{ $sweepstakeTeam->team->fifa_ranking ?? 'n/a' }}</span>
+                                                    </span>
+                                                </label>
+                                                <select form="pot-assignment-form" name="assignments[{{ $sweepstakeTeam->id }}]" aria-label="Pot assignment for {{ $sweepstakeTeam->team->name }}" class="sk-input" @disabled($sweepstake->isLockedForChanges() || $sweepstake->pots->isEmpty())>
+                                                    <option value="">Unassigned</option>
+                                                    @foreach ($sweepstake->pots as $pot)
+                                                        <option value="{{ $pot->id }}" @selected((string) $selectedPotId === (string) $pot->id)>{{ $pot->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @empty
+                                            <p class="px-5 py-4 text-sm text-brand-muted">No included teams available.</p>
+                                        @endforelse
+                                    </div>
+
+                                    <div class="border-t border-brand-border bg-white px-5 py-4">
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <p class="text-sm text-brand-muted">Use the row dropdowns for fine-tuning, then save individual changes.</p>
+                                            <button type="submit" form="pot-assignment-form" class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges() || $sweepstake->pots->isEmpty())>Save individual changes</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 @endif
@@ -602,6 +656,7 @@
                                         data-confirm-variant="danger"
                                     >
                                         @csrf
+                                        <input type="hidden" name="tab" value="draw-results">
                                         <p class="font-medium text-amber-950">This will replace the active draw and notify entrants with email addresses. Previous draw results will be kept in the draw history.</p>
                                         @if (! $isCustomPotMode && ! $hasLeftoverTeams)
                                             <input type="hidden" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}">
@@ -640,6 +695,7 @@
                                         data-confirm-variant="danger"
                                     >
                                         @csrf
+                                        <input type="hidden" name="tab" value="draw-results">
                                         <p class="font-medium text-red-950">Cancelling the current draw will reopen setup. You can add entrants or change teams, then run a new draw. The previous draw will remain in draw history for transparency.</p>
                                         <label class="mt-3 block">
                                             <span class="font-medium text-red-950">Reason for cancelling</span>
@@ -660,6 +716,7 @@
                                 class="mt-4 max-w-xl space-y-3"
                             >
                                 @csrf
+                                <input type="hidden" name="tab" value="draw-results">
                                 @if (! $isCustomPotMode && ! $hasLeftoverTeams)
                                     <input type="hidden" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}">
                                 @endif
@@ -804,6 +861,7 @@
                 <form method="POST" action="{{ route('sweepstakes.settings.update', $sweepstake) }}" class="sk-card p-5">
                     @csrf
                     @method('PATCH')
+                    <input type="hidden" name="tab" value="settings-prizes">
 
                     <h2 class="font-semibold text-brand-navy">Sweepstake settings</h2>
                     <p class="mt-1 text-sm text-brand-muted">
@@ -910,6 +968,7 @@
                         <form method="POST" action="{{ route('sweepstakes.prizes.update', $sweepstake) }}" class="mt-5 space-y-4">
                             @csrf
                             @method('PATCH')
+                            <input type="hidden" name="tab" value="settings-prizes">
 
                             @foreach ($sweepstake->prizes as $prize)
                                 <div class="rounded-lg border border-brand-border bg-brand-soft p-3">
@@ -947,6 +1006,7 @@
                                 >
                                     @csrf
                                     @method('DELETE')
+                                    <input type="hidden" name="tab" value="settings-prizes">
                                     <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges())>Remove {{ $prize->label }}</button>
                                 </form>
                             @endforeach
@@ -957,6 +1017,7 @@
 
                     <form method="POST" action="{{ route('sweepstakes.prizes.store', $sweepstake) }}" class="mt-5 border-t border-brand-border pt-5">
                         @csrf
+                        <input type="hidden" name="tab" value="settings-prizes">
                         <h3 class="font-semibold text-brand-navy">Add prize</h3>
                         <div class="mt-3 grid grid-cols-[76px_1fr] gap-3">
                             <label>

@@ -16,13 +16,13 @@ class SweepstakeMemberController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')->withErrors([
                 'member' => 'Entrants cannot be added after the draw.',
             ]);
         }
 
         if ($capacityMessage = $this->capacityErrorMessage($sweepstake)) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')->withErrors([
                 'member' => $capacityMessage,
             ]);
         }
@@ -39,7 +39,8 @@ class SweepstakeMemberController extends Controller
             'paid_at' => $request->boolean('is_paid') ? now() : null,
         ]);
 
-        return back()->with('status', 'Entrant added.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')
+            ->with('status', 'Entrant added.');
     }
 
     public function update(Request $request, Sweepstake $sweepstake, SweepstakeMember $member): RedirectResponse
@@ -48,7 +49,7 @@ class SweepstakeMemberController extends Controller
         $this->ensureMemberBelongsToSweepstake($member, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')->withErrors([
                 'member' => 'Entrants cannot be edited after the draw.',
             ]);
         }
@@ -60,7 +61,8 @@ class SweepstakeMemberController extends Controller
             'email' => $this->normaliseEmail($attributes['email'] ?? null),
         ]);
 
-        return back()->with('status', 'Entrant updated.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')
+            ->with('status', 'Entrant updated.');
     }
 
     public function updatePayment(Request $request, Sweepstake $sweepstake, SweepstakeMember $member): RedirectResponse
@@ -69,7 +71,7 @@ class SweepstakeMemberController extends Controller
         $this->ensureMemberBelongsToSweepstake($member, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')->withErrors([
                 'member' => 'Entrant payment status is locked after the draw.',
             ]);
         }
@@ -85,7 +87,8 @@ class SweepstakeMemberController extends Controller
             'paid_at' => $isPaid ? now() : null,
         ]);
 
-        return back()->with('status', $isPaid ? 'Entrant marked as paid.' : 'Entrant marked as unpaid.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')
+            ->with('status', $isPaid ? 'Entrant marked as paid.' : 'Entrant marked as unpaid.');
     }
 
     public function destroy(Request $request, Sweepstake $sweepstake, SweepstakeMember $member): RedirectResponse
@@ -94,14 +97,15 @@ class SweepstakeMemberController extends Controller
         $this->ensureMemberBelongsToSweepstake($member, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')->withErrors([
                 'member' => 'Entrants cannot be removed after the draw.',
             ]);
         }
 
         $member->delete();
 
-        return back()->with('status', 'Entrant removed.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'entrants')
+            ->with('status', 'Entrant removed.');
     }
 
     private function ensureAdmin(Request $request, Sweepstake $sweepstake): void

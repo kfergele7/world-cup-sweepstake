@@ -15,7 +15,7 @@ class PrizeController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')->withErrors([
                 'prize' => 'Prizes are locked after the draw.',
             ]);
         }
@@ -37,7 +37,8 @@ class PrizeController extends Controller
             $message .= ' Prize payouts currently exceed the collected entry pot.';
         }
 
-        return back()->with('status', $message);
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')
+            ->with('status', $message);
     }
 
     public function update(Request $request, Sweepstake $sweepstake): RedirectResponse
@@ -45,7 +46,7 @@ class PrizeController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')->withErrors([
                 'prize' => 'Prizes are locked after the draw.',
             ]);
         }
@@ -82,7 +83,8 @@ class PrizeController extends Controller
             }
         });
 
-        return back()->with('status', $this->prizeStatusMessage($sweepstake));
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')
+            ->with('status', $this->prizeStatusMessage($sweepstake));
     }
 
     public function destroy(Request $request, Sweepstake $sweepstake, Prize $prize): RedirectResponse
@@ -91,14 +93,15 @@ class PrizeController extends Controller
         abort_unless($prize->sweepstake_id === $sweepstake->id, 404);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')->withErrors([
                 'prize' => 'Prizes are locked after the draw.',
             ]);
         }
 
         $prize->delete();
 
-        return back()->with('status', 'Prize removed.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'settings-prizes')
+            ->with('status', 'Prize removed.');
     }
 
     private function ensureAdmin(Request $request, Sweepstake $sweepstake): void

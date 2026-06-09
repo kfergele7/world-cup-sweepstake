@@ -21,6 +21,34 @@ document.querySelectorAll('[data-bulk-team-form]').forEach((form) => {
     updateCount();
 });
 
+document.querySelectorAll('[data-bulk-pot-form]').forEach((form) => {
+    const count = form.querySelector('[data-selected-count]');
+    const clearButton = form.querySelector('[data-clear-selection]');
+    const checkboxes = [...form.querySelectorAll('input[type="checkbox"][name="team_ids[]"]')];
+
+    const updateCount = () => {
+        const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+
+        if (count) {
+            count.textContent = selectedCount;
+        }
+
+        if (clearButton) {
+            clearButton.disabled = selectedCount === 0;
+        }
+    };
+
+    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', updateCount));
+    clearButton?.addEventListener('click', () => {
+        checkboxes.forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+
+        updateCount();
+    });
+    updateCount();
+});
+
 document.querySelectorAll('[data-copy-button]').forEach((button) => {
     button.addEventListener('click', async () => {
         const value = button.dataset.copyValue || '';
@@ -104,9 +132,15 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
         button.classList.toggle('border-brand-navy', isActive);
         button.classList.toggle('bg-brand-navy', isActive);
         button.classList.toggle('text-white', isActive);
+        button.classList.toggle('hover:border-brand-navy', isActive);
+        button.classList.toggle('hover:bg-brand-navy', isActive);
+        button.classList.toggle('hover:text-white', isActive);
         button.classList.toggle('border-brand-border', !isActive);
         button.classList.toggle('bg-white', !isActive);
         button.classList.toggle('text-brand-muted', !isActive);
+        button.classList.toggle('hover:border-brand-blue/40', !isActive);
+        button.classList.toggle('hover:bg-brand-blue/5', !isActive);
+        button.classList.toggle('hover:text-brand-navy', !isActive);
         button.setAttribute('aria-current', isActive ? 'page' : 'false');
     };
     const activate = (tabName, updateHash = false) => {
@@ -121,10 +155,17 @@ document.querySelectorAll('[data-tabs]').forEach((tabs) => {
         });
 
         if (updateHash) {
-            window.history.replaceState(null, '', `#${nextTabName}`);
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', nextTabName);
+            url.hash = '';
+            window.history.replaceState(null, '', url);
         }
     };
-    const initialTab = window.location.hash.replace('#', '') || tabs.dataset.defaultTab || tabNames[0];
+    const initialTab = new URL(window.location.href).searchParams.get('tab')
+        || window.location.hash.replace('#', '')
+        || tabs.dataset.activeTab
+        || tabs.dataset.defaultTab
+        || tabNames[0];
 
     tabActivators.set(tabs, activate);
     activate(initialTab);

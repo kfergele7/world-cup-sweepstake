@@ -159,7 +159,7 @@ class SweepstakeDrawCancellationTest extends TestCase
         $this->actingAs($admin)
             ->from(route('sweepstakes.show', $sweepstake))
             ->post(route('sweepstakes.draw.store', $sweepstake))
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'draw-results']))
             ->assertSessionHasErrors('draw');
 
         $this->assertDatabaseCount('sweepstake_draws', 0);

@@ -159,7 +159,7 @@ class SweepstakePrizeManagementTest extends TestCase
                     ],
                 ],
             ])
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'settings-prizes']))
             ->assertSessionHasErrors('prize');
 
         $sweepstake->activeDraw()->firstOrFail()->update([

@@ -136,7 +136,7 @@ class SweepstakeMemberManagementTest extends TestCase
                 'name' => 'Entrant 49',
                 'email' => 'entrant49@example.test',
             ])
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'entrants']))
             ->assertSessionHasErrors('member');
 
         $this->assertDatabaseMissing('sweepstake_members', [
@@ -209,7 +209,7 @@ class SweepstakeMemberManagementTest extends TestCase
                 'name' => 'Late Entrant',
                 'email' => 'late@example.test',
             ])
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'entrants']))
             ->assertSessionHasErrors('member');
 
         $this->assertDatabaseMissing('sweepstake_members', [
@@ -230,7 +230,7 @@ class SweepstakeMemberManagementTest extends TestCase
         $this->actingAs($admin)
             ->from(route('sweepstakes.show', $sweepstake))
             ->delete(route('sweepstakes.members.destroy', [$sweepstake, $first]))
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'entrants']))
             ->assertSessionHasErrors('member');
 
         $this->assertDatabaseHas('sweepstake_members', [

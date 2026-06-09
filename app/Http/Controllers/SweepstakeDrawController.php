@@ -27,16 +27,17 @@ class SweepstakeDrawController extends Controller
             $this->ensureStrategyWasChosenWhenNeeded($draw, $sweepstake, $strategy);
             $draw->handle($sweepstake, leftoverStrategy: $strategy ?? SweepstakeDraw::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED);
         } catch (DrawException $exception) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
                 'draw' => $exception->getMessage(),
             ]);
         }
 
         $this->sendResultEmails($this->activeDraw($sweepstake));
 
-        return back()->with('status', $sweepstake->pot_mode === Sweepstake::POT_MODE_CUSTOM
-            ? 'Custom pot draw completed. Entrants with email addresses have been notified.'
-            : 'Ranked pot draw completed. Entrants with email addresses have been notified.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')
+            ->with('status', $sweepstake->pot_mode === Sweepstake::POT_MODE_CUSTOM
+                ? 'Custom pot draw completed. Entrants with email addresses have been notified.'
+                : 'Ranked pot draw completed. Entrants with email addresses have been notified.');
     }
 
     public function rerun(Request $request, Sweepstake $sweepstake, RunRankedPotDraw $draw): RedirectResponse
@@ -44,7 +45,7 @@ class SweepstakeDrawController extends Controller
         abort_unless($sweepstake->user_id === $request->user()->id, 403);
 
         if (! $sweepstake->activeDraw()->exists()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
                 'draw' => 'Run the first draw before re-running it.',
             ]);
         }
@@ -67,14 +68,15 @@ class SweepstakeDrawController extends Controller
                 $strategy ?? SweepstakeDraw::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED,
             );
         } catch (DrawException $exception) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
                 'draw' => $exception->getMessage(),
             ]);
         }
 
         $this->sendResultEmails($this->activeDraw($sweepstake));
 
-        return back()->with('status', 'Draw re-run completed. Entrants with email addresses have been notified.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')
+            ->with('status', 'Draw re-run completed. Entrants with email addresses have been notified.');
     }
 
     public function cancel(Request $request, Sweepstake $sweepstake): RedirectResponse
@@ -120,14 +122,15 @@ class SweepstakeDrawController extends Controller
                 ]);
             });
         } catch (DrawException $exception) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
                 'draw' => $exception->getMessage(),
             ]);
         }
 
         $this->sendCancellationEmails($cancelledDraw);
 
-        return back()->with('status', 'The previous draw was cancelled. Setup is open again.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')
+            ->with('status', 'The previous draw was cancelled. Setup is open again.');
     }
 
     private function activeDraw(Sweepstake $sweepstake): SweepstakeDraw

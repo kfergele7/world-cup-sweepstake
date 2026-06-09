@@ -138,7 +138,7 @@ class SweepstakeSettingsTest extends TestCase
                 'status' => Sweepstake::STATUS_OPEN,
                 'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
             ])
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'settings-prizes']))
             ->assertSessionHasErrors('settings');
 
         $sweepstake->refresh();
@@ -192,7 +192,7 @@ class SweepstakeSettingsTest extends TestCase
                 'status' => Sweepstake::STATUS_OPEN,
                 'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
             ])
-            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'settings-prizes']))
             ->assertSessionHasErrors('settings');
 
         $this->assertSame(Sweepstake::POT_MODE_AUTO, $sweepstake->fresh()->pot_mode);

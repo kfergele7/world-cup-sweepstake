@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/sweepstakes/{sweepstake}/members/{member}/payment', [SweepstakeMemberController::class, 'updatePayment'])->name('sweepstakes.members.payment.update');
     Route::delete('/sweepstakes/{sweepstake}/members/{member}', [SweepstakeMemberController::class, 'destroy'])->name('sweepstakes.members.destroy');
     Route::post('/sweepstakes/{sweepstake}/pots', [SweepstakePotController::class, 'store'])->name('sweepstakes.pots.store');
+    Route::patch('/sweepstakes/{sweepstake}/pots/bulk-assignments', [SweepstakePotController::class, 'bulkAssignments'])->name('sweepstakes.pots.bulk-assignments');
     Route::patch('/sweepstakes/{sweepstake}/pots/assignments', [SweepstakePotController::class, 'assignments'])->name('sweepstakes.pots.assignments');
     Route::patch('/sweepstakes/{sweepstake}/pots/{pot}', [SweepstakePotController::class, 'update'])->name('sweepstakes.pots.update');
     Route::delete('/sweepstakes/{sweepstake}/pots/{pot}', [SweepstakePotController::class, 'destroy'])->name('sweepstakes.pots.destroy');

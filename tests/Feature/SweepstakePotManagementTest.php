@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\RunRankedPotDraw;
 use App\Models\Sweepstake;
 use App\Models\SweepstakeMember;
 use App\Models\SweepstakePot;
@@ -10,6 +11,7 @@ use App\Models\SweepstakeTeam;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class SweepstakePotManagementTest extends TestCase
@@ -33,6 +35,10 @@ class SweepstakePotManagementTest extends TestCase
             ->assertSee('Settings &amp; Prizes', false)
             ->assertSee('Custom pots')
             ->assertSee('Team pot assignments')
+            ->assertSee('Select multiple teams and move them into a pot in one go.')
+            ->assertSee('Move selected teams')
+            ->assertSee('Move to Unassigned')
+            ->assertSee('Clear selection')
             ->assertSee('Unassigned')
             ->assertSee('Only teams assigned to a custom pot are included in a custom draw.')
             ->assertSee('Create at least one custom pot before running the draw.')
@@ -145,6 +151,164 @@ class SweepstakePotManagementTest extends TestCase
         ]);
         $this->assertDatabaseMissing('sweepstake_pot_teams', [
             'sweepstake_team_id' => $teams[3]->id,
+        ]);
+    }
+
+    public function test_admin_can_bulk_assign_selected_teams_to_a_custom_pot_and_run_draw(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 4);
+        $this->createMember($sweepstake, 'First Entrant');
+        $this->createMember($sweepstake, 'Second Entrant');
+        $pot = $this->createPot($sweepstake, 'Top seeds');
+        $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->take(2)->get();
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+                'team_ids' => $teams->pluck('id')->all(),
+                'target_pot_id' => $pot->id,
+                'tab' => 'pots',
+            ])
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'pots']));
+
+        foreach ($teams as $index => $team) {
+            $this->assertDatabaseHas('sweepstake_pot_teams', [
+                'sweepstake_pot_id' => $pot->id,
+                'sweepstake_team_id' => $team->id,
+                'position' => $index + 1,
+            ]);
+        }
+
+        app(RunRankedPotDraw::class)->handle($sweepstake);
+
+        $this->assertSame(2, $sweepstake->assignments()->count());
+    }
+
+    public function test_admin_can_bulk_move_selected_teams_back_to_unassigned(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 3);
+        $pot = $this->createPot($sweepstake, 'Seeds');
+        $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->take(2)->get();
+
+        foreach ($teams as $index => $team) {
+            SweepstakePotTeam::create([
+                'sweepstake_pot_id' => $pot->id,
+                'sweepstake_team_id' => $team->id,
+                'position' => $index + 1,
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+                'team_ids' => [$teams[0]->id],
+                'target_pot_id' => '',
+                'tab' => 'pots',
+            ])
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'pots']));
+
+        $this->assertDatabaseMissing('sweepstake_pot_teams', [
+            'sweepstake_team_id' => $teams[0]->id,
+        ]);
+        $this->assertDatabaseHas('sweepstake_pot_teams', [
+            'sweepstake_team_id' => $teams[1]->id,
+        ]);
+    }
+
+    public function test_another_admin_and_guests_cannot_bulk_assign_custom_pot_teams(): void
+    {
+        $owner = $this->createUser('owner@example.test');
+        $otherAdmin = $this->createUser('other@example.test');
+        $sweepstake = $this->createSweepstake($owner, teamCount: 2);
+        $pot = $this->createPot($sweepstake, 'Seeds');
+        $team = $sweepstake->sweepstakeTeams()->firstOrFail();
+
+        $this->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+            'team_ids' => [$team->id],
+            'target_pot_id' => $pot->id,
+            'tab' => 'pots',
+        ])->assertRedirect(route('login'));
+
+        $this->actingAs($otherAdmin)
+            ->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+                'team_ids' => [$team->id],
+                'target_pot_id' => $pot->id,
+                'tab' => 'pots',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('sweepstake_pot_teams', [
+            'sweepstake_team_id' => $team->id,
+        ]);
+    }
+
+    public function test_removed_teams_cannot_be_assigned_through_bulk_actions(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2);
+        $pot = $this->createPot($sweepstake, 'Seeds');
+        $removedTeam = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->firstOrFail();
+
+        $removedTeam->update([
+            'is_included' => false,
+            'is_removed' => true,
+            'removed_reason' => 'Removed by admin',
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+                'team_ids' => [$removedTeam->id],
+                'target_pot_id' => $pot->id,
+                'tab' => 'pots',
+            ])
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'pots']))
+            ->assertSessionHasErrors('custom_pots');
+
+        $this->assertDatabaseMissing('sweepstake_pot_teams', [
+            'sweepstake_team_id' => $removedTeam->id,
+        ]);
+    }
+
+    public function test_bulk_pot_assignment_is_locked_after_active_draw_and_reopens_after_cancellation(): void
+    {
+        Mail::fake();
+
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2, potMode: Sweepstake::POT_MODE_AUTO);
+        $this->createMember($sweepstake, 'First Entrant');
+        $this->createMember($sweepstake, 'Second Entrant');
+        $pot = $this->createPot($sweepstake, 'Seeds');
+        $team = $sweepstake->sweepstakeTeams()->firstOrFail();
+
+        app(RunRankedPotDraw::class)->handle($sweepstake);
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+                'team_ids' => [$team->id],
+                'target_pot_id' => $pot->id,
+                'tab' => 'pots',
+            ])
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'pots']))
+            ->assertSessionHasErrors('custom_pots');
+
+        $this->actingAs($admin)
+            ->post(route('sweepstakes.draw.cancel', $sweepstake), [
+                'reason' => 'Setup reopened',
+                'tab' => 'draw-results',
+            ])
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'draw-results']));
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.pots.bulk-assignments', $sweepstake), [
+                'team_ids' => [$team->id],
+                'target_pot_id' => $pot->id,
+                'tab' => 'pots',
+            ])
+            ->assertRedirect(route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'pots']));
+
+        $this->assertDatabaseHas('sweepstake_pot_teams', [
+            'sweepstake_pot_id' => $pot->id,
+            'sweepstake_team_id' => $team->id,
         ]);
     }
 

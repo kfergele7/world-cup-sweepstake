@@ -43,7 +43,7 @@ The Auto pots draw flow is:
 
 Example: 7 entrants and 48 selected teams means 6 teams per entrant, with 6 leftover teams. The admin can either use all 48 teams with 6 entrants receiving one extra team, or remove the 6 lowest-ranked teams and run an even 42-team draw.
 
-Custom pots use admin-created `SweepstakePot` rows and `SweepstakePotTeam` assignments. Each pot has a `teams_per_entrant` setting. A custom draw ignores unassigned included teams, ignores removed teams, shuffles each active pot and draws `entrant_count * teams_per_entrant` teams from that pot. Extra assigned teams in a pot are left unused, not removed. At least one custom pot must have `teams_per_entrant > 0`, and active pots must have enough eligible assigned teams for the configured count.
+Custom pots use admin-created `SweepstakePot` rows and `SweepstakePotTeam` assignments. Each pot has a `teams_per_entrant` setting. Admins can bulk-select included teams and move them to a pot or back to Unassigned, while keeping individual per-team dropdowns for fine-tuning. A custom draw ignores unassigned included teams, ignores removed teams, shuffles each active pot and draws `entrant_count * teams_per_entrant` teams from that pot. Extra assigned teams in a pot are left unused, not removed. At least one custom pot must have `teams_per_entrant > 0`, and active pots must have enough eligible assigned teams for the configured count.
 
 The current implementation is `App\Actions\RunRankedPotDraw`. Re-runs require a plain-text reason, supersede the previous active draw and preserve previous assignments in draw history. Cancelling the active draw requires a reason, marks that draw as cancelled and reopens setup without deleting previous assignments.
 
@@ -80,6 +80,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Extra assigned teams in a custom pot are left unused.
 - At least one custom pot must give entrants teams.
 - Removing a team from a sweepstake clears any custom pot assignment for that sweepstake team.
+- Bulk custom pot assignment is owner-only, uses included non-removed sweepstake teams only and is locked while an active draw exists.
 - Do not allow duplicate team assignments within the same draw version.
 - Allow a controlled re-run only with a required reason; keep setup locked and re-randomise the current included entrants/teams.
 - Allow the active draw to be cancelled with a required reason; setup reopens, the cancelled draw stays in history and a new draw can be run after changes.
@@ -103,14 +104,14 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 6. Remove entrants before the draw if needed.
 7. Bulk remove or restore teams for that sweepstake.
 8. Choose Auto pots or Custom pots while setup is open.
-9. If Custom pots is selected, create pots, set each pot's teams per entrant and assign teams that should be eligible.
+9. If Custom pots is selected, create pots, set each pot's teams per entrant and bulk move selected teams into pots or Unassigned.
 10. Add or edit prize payouts.
 11. Choose a leftover team strategy when needed for Auto pots and run the draw.
 12. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
 13. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
 14. If setup was wrong after a draw, cancel the active draw with a clear reason, make changes and run a new draw.
 
-The sweepstake admin page is organised into tabs: Overview, Entrants, Teams, Pots, Draw & Results and Settings & Prizes.
+The sweepstake admin page is organised into tabs: Overview, Entrants, Teams, Pots, Draw & Results and Settings & Prizes. Tab state is persisted with a `tab` query parameter, hidden form fields and a one-request flashed `active_tab`, so admins land back on the relevant tab after submissions and validation errors.
 
 ## Entrant Journey
 

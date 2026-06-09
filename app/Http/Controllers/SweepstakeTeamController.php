@@ -16,7 +16,7 @@ class SweepstakeTeamController extends Controller
         $this->ensureAdmin($request, $sweepstake);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'teams')->withErrors([
                 'team' => 'Team selection is locked after the draw.',
             ]);
         }
@@ -54,7 +54,8 @@ class SweepstakeTeamController extends Controller
                 ->delete();
         }
 
-        return back()->with('status', $isRestore ? 'Selected teams restored.' : 'Selected teams removed.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'teams')
+            ->with('status', $isRestore ? 'Selected teams restored.' : 'Selected teams removed.');
     }
 
     public function update(Request $request, Sweepstake $sweepstake, SweepstakeTeam $sweepstakeTeam): RedirectResponse
@@ -63,7 +64,7 @@ class SweepstakeTeamController extends Controller
         abort_unless($sweepstakeTeam->sweepstake_id === $sweepstake->id, 404);
 
         if ($sweepstake->isLockedForChanges()) {
-            return back()->withErrors([
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'teams')->withErrors([
                 'team' => 'Team selections are locked after the draw.',
             ]);
         }
@@ -85,7 +86,8 @@ class SweepstakeTeamController extends Controller
             $sweepstakeTeam->potAssignment()->delete();
         }
 
-        return back()->with('status', 'Team selection updated.');
+        return $this->redirectToSweepstakeTab($request, $sweepstake, 'teams')
+            ->with('status', 'Team selection updated.');
     }
 
     private function ensureAdmin(Request $request, Sweepstake $sweepstake): void
