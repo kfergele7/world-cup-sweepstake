@@ -2,25 +2,27 @@
 
 ## Current State
 
-The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation for SweepKit, a private football sweepstake app. The app is scaffolded directly in the repository root, with admin auth, dashboard routes, sweepstake creation, editable sweepstake settings, public joining, cleaned-up manual entrant management, paid/unpaid entrant toggles, bulk per-sweepstake team removal/restoration, editable prizes, ranked pot draw execution, draw result/cancellation emails, controlled draw re-runs, active draw cancellation/reopen setup, sidebar draw history and private entrant result pages.
+The repository now contains a Laravel 13, Vue 3, Vite and Tailwind foundation for SweepKit, a private football sweepstake app. The app is scaffolded directly in the repository root, with admin auth, dashboard routes, sweepstake creation, editable sweepstake settings, public joining, cleaned-up manual entrant management, paid/unpaid entrant toggles, bulk per-sweepstake team removal/restoration, Auto pots, Custom pots, editable prizes, draw result/cancellation emails, controlled draw re-runs, active draw cancellation/reopen setup, sidebar draw history and private entrant result pages.
 
-The ranked pot draw is implemented and covered by automated feature tests. Draws now include all entrants, with paid/unpaid kept as an admin tracking field. Local SQLite has been migrated and seeded.
+Auto and Custom pot draws are implemented and covered by automated feature tests. Draws now include all entrants, with paid/unpaid kept as an admin tracking field. Local SQLite has been migrated and seeded.
 
-This pass fixed football-specific national flag display so England, Scotland, Wales and Northern Ireland use compact safe text labels instead of the broken black-flag emoji, while standard country codes still render normal flag emoji.
+The previous pass fixed football-specific national flag display so England, Scotland, Wales and Northern Ireland use compact safe text labels instead of the broken black-flag emoji, while standard country codes still render normal flag emoji.
+
+This pass added draw-rule selection between Auto pots and Custom pots. Custom pot setup uses admin-created pots and per-team select assignments, validates that every included team is assigned exactly once, requires each pot to contain exactly one team per entrant, records the draw rule in draw history and keeps setup locked while an active draw exists. Cancelling the active draw reopens setup and allows the draw rule/custom pots to be changed again.
 
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
 - App configuration and ignores: `.env.example`, `.gitignore`, `README.md`, `config/app.php`.
-- Models: `User`, `Sweepstake`, `SweepstakeDraw`, `SweepstakeMember`, `Team`, `SweepstakeTeam`, `TeamAssignment`, `Prize`.
-- Migrations for sweepstakes, draw versions and draw strategy/cancellation metadata, entrants, entrant source, teams, sweepstake teams, assignments and prizes.
+- Models: `User`, `Sweepstake`, `SweepstakeDraw`, `SweepstakeMember`, `Team`, `SweepstakeTeam`, `SweepstakePot`, `SweepstakePotTeam`, `TeamAssignment`, `Prize`.
+- Migrations for sweepstakes, draw versions and draw strategy/cancellation metadata, entrants, entrant source, teams, sweepstake teams, custom pots, assignments and prizes.
 - Seeders: `DatabaseSeeder`, `TeamSeeder`.
 - Draw logic: `app/Actions/RunRankedPotDraw.php`, `app/Exceptions/DrawException.php`.
 - Mail: `app/Mail/DrawResultsReady.php`, `app/Mail/DrawCancelled.php`, `resources/views/mail/draw-results-ready.blade.php`, `resources/views/mail/draw-cancelled.blade.php`.
-- Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, entrants, editable prizes, first draw, reasoned draw re-runs and active draw cancellation.
+- Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, custom pots, entrants, editable prizes, first draw, reasoned draw re-runs and active draw cancellation.
 - Brand tokens and component classes: `resources/css/app.css`.
 - Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components and lightweight JS for bulk counts, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
-- Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
+- Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePotManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
 - Flag helper tests: `tests/Unit/TeamFlagTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
 
@@ -67,7 +69,18 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - Attempted authenticated browser smoke test for the entrant UI; the in-app Browser loaded the app but text entry was blocked by a missing virtual clipboard in the browser plugin. Authenticated flows are covered by Laravel feature tests.
 - Attempted to discover the in-app Browser control tool for this pass, but it was not exposed in this thread. Browser-level verification was limited to automated Laravel feature tests and `npm run build`.
 
-Current passing test result: 65 tests, 318 assertions.
+Current passing test result: 75 tests, 386 assertions.
+
+Custom pot pass checks:
+
+- `php artisan migrate` applied `2026_06_09_000000_add_custom_pot_draw_rules`.
+- `php artisan test` passed: 75 tests, 386 assertions.
+- `composer test` passed: 75 tests, 386 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `php artisan route:list` passed and shows 32 routes, including the custom pot routes.
+- `git diff --check` passed.
+- Browser smoke check at `http://127.0.0.1:8001/` loaded the SweepKit landing page in the in-app Browser.
 
 ## Known Issues Or Blockers
 
@@ -77,6 +90,7 @@ Current passing test result: 65 tests, 318 assertions.
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.
 - Team seed rankings are a working April 2026 dataset and should be refreshed from FIFA before production launch.
 - The admin settings, team selection and entrant UI are usable but still basic; dedicated edit pages/modals, search or select-all helpers may be nicer later.
+- Custom pot setup is intentionally simple for this pass: one select per included team, no drag/drop or bulk assignment tools yet.
 - The final logo asset has not been chosen yet; the header uses a text wordmark placeholder component.
 
 ## Recommended Next Steps

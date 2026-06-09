@@ -34,7 +34,9 @@ class SweepstakeDrawController extends Controller
 
         $this->sendResultEmails($this->activeDraw($sweepstake));
 
-        return back()->with('status', 'Ranked pot draw completed. Entrants with email addresses have been notified.');
+        return back()->with('status', $sweepstake->pot_mode === Sweepstake::POT_MODE_CUSTOM
+            ? 'Custom pot draw completed. Entrants with email addresses have been notified.'
+            : 'Ranked pot draw completed. Entrants with email addresses have been notified.');
     }
 
     public function rerun(Request $request, Sweepstake $sweepstake, RunRankedPotDraw $draw): RedirectResponse

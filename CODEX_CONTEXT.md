@@ -4,7 +4,7 @@
 
 SweepKit lets an admin create and manage a private 2026 FIFA World Cup sweepstake.
 
-Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, edit prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw, reasoned re-run or cancellation is completed.
+Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, choose Auto pots or Custom pots, edit prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw, reasoned re-run or cancellation is completed.
 
 ## Stack
 
@@ -25,9 +25,9 @@ Admins can create a sweepstake, share a private join link or PIN-style code, tra
 
 ## Core Draw Logic
 
-The default draw mode is `ranked_pots`.
+The default draw mode is `ranked_pots`, with `pot_mode` defaulting to `auto_pots`.
 
-The ranked pot draw flow is:
+The Auto pots draw flow is:
 
 1. Load selected teams for the sweepstake only.
 2. Sort by FIFA ranking or strength, strongest first.
@@ -43,16 +43,20 @@ The ranked pot draw flow is:
 
 Example: 7 entrants and 48 selected teams means 6 teams per entrant, with 6 leftover teams. The admin can either use all 48 teams with 6 entrants receiving one extra team, or remove the 6 lowest-ranked teams and run an even 42-team draw.
 
+Custom pots use admin-created `SweepstakePot` rows and `SweepstakePotTeam` assignments. A custom draw requires every included team to be assigned to exactly one custom pot, and every custom pot must contain exactly one team per entrant. The draw then shuffles each pot and assigns one team from each custom pot to every entrant.
+
 The current implementation is `App\Actions\RunRankedPotDraw`. Re-runs require a plain-text reason, supersede the previous active draw and preserve previous assignments in draw history. Cancelling the active draw requires a reason, marks that draw as cancelled and reopens setup without deleting previous assignments.
 
 ## Core Models
 
 - `User`: authenticated sweepstake admin.
-- `Sweepstake`: admin-owned sweepstake with join code, entry fee, status, draw mode and draw metadata.
-- `SweepstakeDraw`: per-sweepstake draw version with version number, active/superseded/cancelled status, optional re-run/cancellation reasons, leftover strategy metadata and run timestamp.
+- `Sweepstake`: admin-owned sweepstake with join code, entry fee, status, draw mode, pot mode and draw metadata.
+- `SweepstakeDraw`: per-sweepstake draw version with version number, active/superseded/cancelled status, optional re-run/cancellation reasons, pot mode, leftover strategy metadata and run timestamp.
 - `SweepstakeMember`: non-account entrant record with name, optional email, source, paid state and optional admin marker.
 - `Team`: global master team record.
 - `SweepstakeTeam`: per-sweepstake inclusion/removal state for a global team.
+- `SweepstakePot`: admin-created custom pot for one sweepstake.
+- `SweepstakePotTeam`: custom pot assignment for one included `SweepstakeTeam`.
 - `TeamAssignment`: persisted draw result tied to a specific `SweepstakeDraw`.
 - `Prize`: per-sweepstake prize payout row.
 
@@ -68,8 +72,11 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Allow the owning admin to edit sweepstake name, entry fee, currency and draft/open status before the draw.
 - Require at least 2 entrants before a draw.
 - Require enough selected teams for all entrants.
+- Allow the owning admin to switch between Auto pots and Custom pots while setup is open; lock the choice while an active draw exists, then allow changes again after cancellation/reopen.
 - If teams divide evenly by entrants, every entrant receives the same number of teams.
 - If teams do not divide evenly by entrants, the admin must explicitly choose whether to randomly assign leftover teams or remove the lowest-ranked leftover teams for an even draw.
+- Custom pots require each included team to be assigned to one custom pot, and each custom pot must contain exactly one team per entrant before the custom draw can run.
+- Removing a team from a sweepstake clears any custom pot assignment for that sweepstake team.
 - Do not allow duplicate team assignments within the same draw version.
 - Allow a controlled re-run only with a required reason; keep setup locked and re-randomise the current included entrants/teams.
 - Allow the active draw to be cancelled with a required reason; setup reopens, the cancelled draw stays in history and a new draw can be run after changes.
@@ -92,11 +99,13 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 5. Review joined entrants, add offline entrants manually and mark paid entrants.
 6. Remove entrants before the draw if needed.
 7. Bulk remove or restore teams for that sweepstake.
-8. Add or edit prize payouts.
-9. Choose a leftover team strategy when needed and run the ranked pot draw.
-10. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
-11. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
-12. If setup was wrong after a draw, cancel the active draw with a clear reason, make changes and run a new draw.
+8. Choose Auto pots or Custom pots while setup is open.
+9. If Custom pots is selected, create pots and assign included teams so each pot has one team per entrant.
+10. Add or edit prize payouts.
+11. Choose a leftover team strategy when needed for Auto pots and run the draw.
+12. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
+13. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
+14. If setup was wrong after a draw, cancel the active draw with a clear reason, make changes and run a new draw.
 
 ## Entrant Journey
 

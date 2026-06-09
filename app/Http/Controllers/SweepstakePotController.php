@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Sweepstake;
+use App\Models\SweepstakePot;
+use App\Models\SweepstakePotTeam;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class SweepstakePotController extends Controller
+{
+    public function store(Request $request, Sweepstake $sweepstake): RedirectResponse
+    {
+        $this->ensureAdmin($request, $sweepstake);
+
+        if ($sweepstake->isLockedForChanges()) {
+            return back()->withErrors([
+                'custom_pots' => 'Custom pots are locked after the draw.',
+            ]);
+        }
+
+        $attributes = $request->validate([
+            'name' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $position = (int) $sweepstake->pots()->max('position') + 1;
+        $name = trim($attributes['name'] ?? '') ?: "Pot {$position}";
+
+        $sweepstake->pots()->create([
+            'name' => $name,
+            'position' => $position,
+        ]);
+
+        return back()->with('status', 'Custom pot created.');
+    }
+
+    public function update(Request $request, Sweepstake $sweepstake, SweepstakePot $pot): RedirectResponse
+    {
+        $this->ensureAdmin($request, $sweepstake);
+        abort_unless($pot->sweepstake_id === $sweepstake->id, 404);
+
+        if ($sweepstake->isLockedForChanges()) {
+            return back()->withErrors([
+                'custom_pots' => 'Custom pots are locked after the draw.',
+            ]);
+        }
+
+        $attributes = $request->validate([
+            'name' => ['required', 'string', 'max:80'],
+        ], [
+            'name.required' => 'Please enter a pot name.',
+        ]);
+
+        $pot->update([
+            'name' => trim($attributes['name']),
+        ]);
+
+        return back()->with('status', 'Custom pot renamed.');
+    }
+
+    public function destroy(Request $request, Sweepstake $sweepstake, SweepstakePot $pot): RedirectResponse
+    {
+        $this->ensureAdmin($request, $sweepstake);
+        abort_unless($pot->sweepstake_id === $sweepstake->id, 404);
+
+        if ($sweepstake->isLockedForChanges()) {
+            return back()->withErrors([
+                'custom_pots' => 'Custom pots are locked after the draw.',
+            ]);
+        }
+
+        if ($pot->potTeams()->exists()) {
+            return back()->withErrors([
+                'custom_pots' => 'Only empty custom pots can be deleted.',
+            ]);
+        }
+
+        $pot->delete();
+
+        return back()->with('status', 'Custom pot deleted.');
+    }
+
+    public function assignments(Request $request, Sweepstake $sweepstake): RedirectResponse
+    {
+        $this->ensureAdmin($request, $sweepstake);
+
+        if ($sweepstake->isLockedForChanges()) {
+            return back()->withErrors([
+                'custom_pots' => 'Custom pot assignments are locked after the draw.',
+            ]);
+        }
+
+        $attributes = $request->validate([
+            'assignments' => ['nullable', 'array'],
+            'assignments.*' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'assignments.*.integer' => 'Choose a valid custom pot for each team.',
+        ]);
+
+        $assignments = collect($attributes['assignments'] ?? []);
+
+        if ($assignments->keys()->contains(fn (int|string $teamId): bool => ! ctype_digit((string) $teamId))) {
+            return back()->withErrors([
+                'custom_pots' => 'Only included teams can be assigned to custom pots.',
+            ]);
+        }
+
+        $selectedTeamIds = $sweepstake->selectedSweepstakeTeams()
+            ->orderBy('id')
+            ->pluck('id');
+
+        $requestedTeamIds = $assignments
+            ->keys()
+            ->map(fn (int|string $teamId): int => (int) $teamId)
+            ->unique()
+            ->values();
+
+        if ($requestedTeamIds->diff($selectedTeamIds)->isNotEmpty()) {
+            return back()->withErrors([
+                'custom_pots' => 'Only included teams can be assigned to custom pots.',
+            ]);
+        }
+
+        $requestedPotIds = $assignments
+            ->filter(fn (mixed $potId): bool => filled($potId))
+            ->map(fn (mixed $potId): int => (int) $potId)
+            ->unique()
+            ->values();
+
+        $validPotIds = $sweepstake->pots()
+            ->whereIn('id', $requestedPotIds->all())
+            ->pluck('id');
+
+        abort_unless($requestedPotIds->diff($validPotIds)->isEmpty(), 404);
+
+        DB::transaction(function () use ($assignments, $selectedTeamIds, $sweepstake): void {
+            $sweepstakePotIds = $sweepstake->pots()->pluck('id');
+
+            SweepstakePotTeam::query()
+                ->whereIn('sweepstake_pot_id', $sweepstakePotIds->all())
+                ->delete();
+
+            $positions = [];
+
+            foreach ($selectedTeamIds as $selectedTeamId) {
+                $potId = $assignments->get((string) $selectedTeamId)
+                    ?? $assignments->get($selectedTeamId);
+
+                if (! filled($potId)) {
+                    continue;
+                }
+
+                $potId = (int) $potId;
+                $positions[$potId] = ($positions[$potId] ?? 0) + 1;
+
+                SweepstakePotTeam::create([
+                    'sweepstake_pot_id' => $potId,
+                    'sweepstake_team_id' => $selectedTeamId,
+                    'position' => $positions[$potId],
+                ]);
+            }
+        });
+
+        return back()->with('status', 'Custom pot assignments saved.');
+    }
+
+    private function ensureAdmin(Request $request, Sweepstake $sweepstake): void
+    {
+        abort_unless($sweepstake->user_id === $request->user()->id, 403);
+    }
+}

@@ -166,6 +166,7 @@ class SweepstakeResultsTest extends TestCase
             ->assertSee('Superseded')
             ->assertSee('Draw #2')
             ->assertSee('Active draw')
+            ->assertSee('Draw rule: Auto pots')
             ->assertSee('Reason: Ryan was missed from the entrant list')
             ->assertSee('Bob Brown');
 
@@ -174,6 +175,7 @@ class SweepstakeResultsTest extends TestCase
             ->assertSee('Draw history')
             ->assertSee('Superseded')
             ->assertSee('Active draw')
+            ->assertSee('Draw rule: Auto pots')
             ->assertSee('Reason: Ryan was missed from the entrant list')
             ->assertSee('Team 2')
             ->assertDontSee('bob@example.test')

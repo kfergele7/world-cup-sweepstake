@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'reason',
     'ran_at',
     'rerun_of_draw_id',
+    'pot_mode',
     'leftover_strategy',
     'selected_team_count',
     'base_teams_per_member',
@@ -63,6 +64,14 @@ class SweepstakeDraw extends Model
             self::LEFTOVER_STRATEGY_ASSIGN_RANDOMLY => 'Randomly assigned leftover teams',
             self::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED => 'Removed leftover teams for an even draw',
             default => 'Not recorded',
+        };
+    }
+
+    public function potModeLabel(): string
+    {
+        return match ($this->pot_mode) {
+            Sweepstake::POT_MODE_CUSTOM => 'Custom pots',
+            default => 'Auto pots',
         };
     }
 

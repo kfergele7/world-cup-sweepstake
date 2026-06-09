@@ -9,6 +9,7 @@ use App\Models\SweepstakeTeam;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class SweepstakeSettingsTest extends TestCase
@@ -26,6 +27,7 @@ class SweepstakeSettingsTest extends TestCase
                 'entry_fee' => '12.50',
                 'currency' => 'GBP',
                 'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_AUTO,
             ])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -47,6 +49,7 @@ class SweepstakeSettingsTest extends TestCase
                 'entry_fee' => '10',
                 'currency' => 'gbp',
                 'status' => Sweepstake::STATUS_DRAFT,
+                'pot_mode' => Sweepstake::POT_MODE_AUTO,
             ])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -71,6 +74,7 @@ class SweepstakeSettingsTest extends TestCase
                 'entry_fee' => '20',
                 'currency' => 'GBP',
                 'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
             ])
             ->assertForbidden();
 
@@ -90,6 +94,7 @@ class SweepstakeSettingsTest extends TestCase
             'entry_fee' => '20',
             'currency' => 'GBP',
             'status' => Sweepstake::STATUS_OPEN,
+            'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
         ])->assertRedirect(route('login'));
 
         $this->assertSame('0.00', $sweepstake->fresh()->entry_fee);
@@ -107,6 +112,7 @@ class SweepstakeSettingsTest extends TestCase
                 'entry_fee' => '-1',
                 'currency' => 'GBP',
                 'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_AUTO,
             ])
             ->assertRedirect(route('sweepstakes.show', $sweepstake))
             ->assertSessionHasErrors('entry_fee');
@@ -130,6 +136,7 @@ class SweepstakeSettingsTest extends TestCase
                 'entry_fee' => '20',
                 'currency' => 'GBP',
                 'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
             ])
             ->assertRedirect(route('sweepstakes.show', $sweepstake))
             ->assertSessionHasErrors('settings');
@@ -139,6 +146,79 @@ class SweepstakeSettingsTest extends TestCase
         $this->assertSame('Office Sweepstake', $sweepstake->name);
         $this->assertSame('0.00', $sweepstake->entry_fee);
         $this->assertSame(Sweepstake::STATUS_DRAWN, $sweepstake->status);
+    }
+
+    public function test_draw_rule_can_change_before_draw_and_after_cancelled_draw(): void
+    {
+        Mail::fake();
+
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, entryFee: 0, teamCount: 4);
+        $this->createEntrant($sweepstake, 'First Entrant');
+        $this->createEntrant($sweepstake, 'Second Entrant');
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.settings.update', $sweepstake), [
+                'sweepstake_name' => $sweepstake->name,
+                'entry_fee' => '0',
+                'currency' => 'GBP',
+                'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(Sweepstake::POT_MODE_CUSTOM, $sweepstake->fresh()->pot_mode);
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.settings.update', $sweepstake), [
+                'sweepstake_name' => $sweepstake->name,
+                'entry_fee' => '0',
+                'currency' => 'GBP',
+                'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_AUTO,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
+
+        $this->actingAs($admin)
+            ->from(route('sweepstakes.show', $sweepstake))
+            ->patch(route('sweepstakes.settings.update', $sweepstake), [
+                'sweepstake_name' => $sweepstake->name,
+                'entry_fee' => '0',
+                'currency' => 'GBP',
+                'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
+            ])
+            ->assertRedirect(route('sweepstakes.show', $sweepstake))
+            ->assertSessionHasErrors('settings');
+
+        $this->assertSame(Sweepstake::POT_MODE_AUTO, $sweepstake->fresh()->pot_mode);
+
+        $this->actingAs($admin)
+            ->post(route('sweepstakes.draw.cancel', $sweepstake), [
+                'reason' => 'Switching to custom pots',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)
+            ->patch(route('sweepstakes.settings.update', $sweepstake), [
+                'sweepstake_name' => $sweepstake->name,
+                'entry_fee' => '0',
+                'currency' => 'GBP',
+                'status' => Sweepstake::STATUS_OPEN,
+                'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $sweepstake->refresh();
+
+        $this->assertSame(Sweepstake::STATUS_OPEN, $sweepstake->status);
+        $this->assertSame(Sweepstake::POT_MODE_CUSTOM, $sweepstake->pot_mode);
     }
 
     private function createUser(string $email): User
@@ -161,6 +241,7 @@ class SweepstakeSettingsTest extends TestCase
             'currency' => 'GBP',
             'status' => Sweepstake::STATUS_OPEN,
             'draw_mode' => Sweepstake::DRAW_MODE_RANKED_POTS,
+            'pot_mode' => Sweepstake::POT_MODE_AUTO,
             'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
         ]);
 

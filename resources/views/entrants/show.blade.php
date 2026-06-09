@@ -71,6 +71,8 @@
                                 <p class="mt-2 text-brand-muted">Reason: {{ $draw->reason }}</p>
                             @endif
 
+                            <p class="mt-2 text-brand-muted">Draw rule: {{ $draw->potModeLabel() }}</p>
+
                             @if ($draw->cancelled_reason)
                                 <p class="mt-2 text-brand-muted">Cancellation reason: {{ $draw->cancelled_reason }}</p>
                             @endif

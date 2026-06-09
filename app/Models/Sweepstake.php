@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'currency',
     'status',
     'draw_mode',
+    'pot_mode',
     'teams_per_member',
     'leftover_rule',
     'drawn_at',
@@ -39,6 +40,10 @@ class Sweepstake extends Model
     public const STATUS_COMPLETED = 'completed';
 
     public const DRAW_MODE_RANKED_POTS = 'ranked_pots';
+
+    public const POT_MODE_AUTO = 'auto_pots';
+
+    public const POT_MODE_CUSTOM = 'custom_pots';
 
     public const LEFTOVER_REMOVE_LOWEST_RANKED = 'remove_lowest_ranked';
 
@@ -88,9 +93,22 @@ class Sweepstake extends Model
         return $this->hasMany(TeamAssignment::class);
     }
 
+    public function pots(): HasMany
+    {
+        return $this->hasMany(SweepstakePot::class)->orderBy('position')->orderBy('id');
+    }
+
     public function draws(): HasMany
     {
         return $this->hasMany(SweepstakeDraw::class)->orderBy('version_number');
+    }
+
+    public function potModeLabel(): string
+    {
+        return match ($this->pot_mode) {
+            self::POT_MODE_CUSTOM => 'Custom pots',
+            default => 'Auto pots',
+        };
     }
 
     public function activeDraw(): HasOne

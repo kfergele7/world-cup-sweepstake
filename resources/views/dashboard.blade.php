@@ -52,6 +52,26 @@
                     </label>
                 </div>
 
+                <fieldset class="mt-4">
+                    <legend class="text-sm font-medium text-brand-navy">Draw rule</legend>
+                    <div class="mt-2 space-y-2">
+                        <label class="flex gap-2 rounded-lg border border-brand-border bg-white px-3 py-2 text-sm text-brand-muted">
+                            <input type="radio" name="pot_mode" value="{{ \App\Models\Sweepstake::POT_MODE_AUTO }}" class="mt-1 border-brand-border text-brand-green" @checked(old('pot_mode', \App\Models\Sweepstake::POT_MODE_AUTO) === \App\Models\Sweepstake::POT_MODE_AUTO)>
+                            <span>
+                                <span class="block font-semibold text-brand-navy">Auto pots</span>
+                                <span>Use stored rankings.</span>
+                            </span>
+                        </label>
+                        <label class="flex gap-2 rounded-lg border border-brand-border bg-white px-3 py-2 text-sm text-brand-muted">
+                            <input type="radio" name="pot_mode" value="{{ \App\Models\Sweepstake::POT_MODE_CUSTOM }}" class="mt-1 border-brand-border text-brand-green" @checked(old('pot_mode') === \App\Models\Sweepstake::POT_MODE_CUSTOM)>
+                            <span>
+                                <span class="block font-semibold text-brand-navy">Custom pots</span>
+                                <span>Assign teams to pots manually.</span>
+                            </span>
+                        </label>
+                    </div>
+                </fieldset>
+
                 <button class="sk-btn-green mt-5">Create</button>
             </form>
         </aside>

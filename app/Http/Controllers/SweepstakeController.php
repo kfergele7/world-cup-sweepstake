@@ -8,6 +8,7 @@ use App\Models\SweepstakeTeam;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,10 @@ class SweepstakeController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'entry_fee' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'currency' => ['nullable', 'string', 'size:3'],
+            'pot_mode' => ['nullable', Rule::in([
+                Sweepstake::POT_MODE_AUTO,
+                Sweepstake::POT_MODE_CUSTOM,
+            ])],
         ]);
 
         $sweepstake = DB::transaction(function () use ($request, $attributes): Sweepstake {
@@ -33,6 +38,7 @@ class SweepstakeController extends Controller
                 'currency' => strtoupper($attributes['currency'] ?? 'GBP'),
                 'status' => Sweepstake::STATUS_OPEN,
                 'draw_mode' => Sweepstake::DRAW_MODE_RANKED_POTS,
+                'pot_mode' => $attributes['pot_mode'] ?? Sweepstake::POT_MODE_AUTO,
                 'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
             ]);
 
@@ -69,6 +75,8 @@ class SweepstakeController extends Controller
                 ])
                 ->orderBy('version_number'),
             'sweepstakeTeams.team',
+            'sweepstakeTeams.potAssignment',
+            'pots.potTeams.sweepstakeTeam.team',
             'prizes',
         ]);
 
@@ -113,6 +121,7 @@ class SweepstakeController extends Controller
             'selectedTeamCount' => $selectedTeamCount,
             'leftoverTeamCount' => $leftoverTeamCount,
             'baseTeamsPerMember' => $baseTeamsPerMember,
+            'customPotWarnings' => $this->customPotWarnings($sweepstake, $selectedTeams, $memberCount),
             'entrantCapacity' => $sweepstake->maximumEntrants(),
             'latestCancelledDraw' => $sweepstake->draws
                 ->sortByDesc('version_number')
@@ -141,6 +150,10 @@ class SweepstakeController extends Controller
                 Sweepstake::STATUS_DRAFT,
                 Sweepstake::STATUS_OPEN,
             ])],
+            'pot_mode' => ['required', Rule::in([
+                Sweepstake::POT_MODE_AUTO,
+                Sweepstake::POT_MODE_CUSTOM,
+            ])],
         ], [
             'sweepstake_name.required' => 'Please enter a sweepstake name.',
             'entry_fee.required' => 'Please enter an entry fee.',
@@ -148,6 +161,7 @@ class SweepstakeController extends Controller
             'entry_fee.min' => 'Entry fee cannot be negative.',
             'currency.size' => 'Currency must be a three-letter code, such as GBP.',
             'status.in' => 'Status can only be Draft or Open before the draw.',
+            'pot_mode.in' => 'Choose Auto pots or Custom pots before running the draw.',
         ]);
 
         $sweepstake->update([
@@ -155,6 +169,7 @@ class SweepstakeController extends Controller
             'entry_fee' => $attributes['entry_fee'],
             'currency' => Str::upper($attributes['currency']),
             'status' => $attributes['status'],
+            'pot_mode' => $attributes['pot_mode'],
         ]);
 
         return back()->with('status', 'Sweepstake settings saved.');
@@ -194,5 +209,56 @@ class SweepstakeController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * @param  Collection<int, SweepstakeTeam>  $selectedTeams
+     * @return array<int, string>
+     */
+    private function customPotWarnings(Sweepstake $sweepstake, Collection $selectedTeams, int $memberCount): array
+    {
+        if ($sweepstake->pot_mode !== Sweepstake::POT_MODE_CUSTOM) {
+            return [];
+        }
+
+        $warnings = [];
+
+        if ($sweepstake->pots->isEmpty()) {
+            $warnings[] = 'Create at least one custom pot before running the draw.';
+        }
+
+        $selectedTeamIds = $selectedTeams->pluck('id')->unique()->values();
+        $assignedTeamIds = $sweepstake->pots
+            ->flatMap(fn ($pot) => $pot->potTeams)
+            ->pluck('sweepstake_team_id')
+            ->unique()
+            ->values();
+
+        $invalidAssignmentCount = $assignedTeamIds->diff($selectedTeamIds)->count();
+
+        if ($invalidAssignmentCount > 0) {
+            $warnings[] = 'Some custom pot assignments point to teams that are no longer included. Save assignments to clear them.';
+        }
+
+        $unassignedCount = $selectedTeamIds->diff($assignedTeamIds)->count();
+
+        if ($unassignedCount > 0) {
+            $verb = $unassignedCount === 1 ? 'is' : 'are';
+            $warnings[] = "{$unassignedCount} included ".Str::plural('team', $unassignedCount)." {$verb} not assigned to a custom pot.";
+        }
+
+        if ($memberCount > 0) {
+            foreach ($sweepstake->pots as $pot) {
+                $includedPotTeamCount = $pot->potTeams
+                    ->filter(fn ($potTeam): bool => (bool) $potTeam->sweepstakeTeam?->is_included && ! $potTeam->sweepstakeTeam?->is_removed)
+                    ->count();
+
+                if ($includedPotTeamCount !== $memberCount) {
+                    $warnings[] = "{$pot->name} has {$includedPotTeamCount} ".Str::plural('team', $includedPotTeamCount)."; it needs exactly {$memberCount}.";
+                }
+            }
+        }
+
+        return $warnings;
     }
 }

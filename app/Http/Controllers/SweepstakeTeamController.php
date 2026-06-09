@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sweepstake;
+use App\Models\SweepstakePotTeam;
 use App\Models\SweepstakeTeam;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,12 @@ class SweepstakeTeamController extends Controller
             'removed_reason' => $isRestore ? null : 'Removed by admin',
         ]);
 
+        if (! $isRestore) {
+            SweepstakePotTeam::query()
+                ->whereIn('sweepstake_team_id', $teamIds->all())
+                ->delete();
+        }
+
         return back()->with('status', $isRestore ? 'Selected teams restored.' : 'Selected teams removed.');
     }
 
@@ -73,6 +80,10 @@ class SweepstakeTeamController extends Controller
             'is_removed' => ! $isIncluded,
             'removed_reason' => $isIncluded ? null : ($attributes['removed_reason'] ?? 'Removed by admin'),
         ]);
+
+        if (! $isIncluded) {
+            $sweepstakeTeam->potAssignment()->delete();
+        }
 
         return back()->with('status', 'Team selection updated.');
     }

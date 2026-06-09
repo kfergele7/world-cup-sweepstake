@@ -4,7 +4,8 @@
     @php
         $removeLeftoversStrategy = \App\Models\SweepstakeDraw::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED;
         $assignLeftoversStrategy = \App\Models\SweepstakeDraw::LEFTOVER_STRATEGY_ASSIGN_RANDOMLY;
-        $hasLeftoverTeams = $memberCount > 0 && $leftoverTeamCount > 0;
+        $isCustomPotMode = $sweepstake->pot_mode === \App\Models\Sweepstake::POT_MODE_CUSTOM;
+        $hasLeftoverTeams = ! $isCustomPotMode && $memberCount > 0 && $leftoverTeamCount > 0;
     @endphp
 
     <div class="grid gap-8 xl:grid-cols-[1fr_360px]">
@@ -31,14 +32,20 @@
                         action="{{ route('sweepstakes.draw.store', $sweepstake) }}"
                         data-confirm-form
                         data-confirm-title="Run draw"
-                        data-confirm-message="This will assign teams to every entrant and notify entrants with email addresses."
+                        data-confirm-message="{{ $isCustomPotMode ? 'This will assign one team from each custom pot to every entrant and notify entrants with email addresses.' : 'This will assign teams to every entrant and notify entrants with email addresses.' }}"
                         data-confirm-label="Run draw"
                         class="max-w-sm space-y-3"
                     >
                         @csrf
-                        @unless ($hasLeftoverTeams)
+                        @if (! $isCustomPotMode && ! $hasLeftoverTeams)
                             <input type="hidden" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}">
-                        @endunless
+                        @endif
+                        @if ($isCustomPotMode)
+                            <div class="rounded-lg border border-brand-border bg-brand-soft p-3 text-sm text-brand-muted">
+                                <p class="font-semibold text-brand-navy">Custom pots selected</p>
+                                <p class="mt-1">The draw will use the pot assignments below.</p>
+                            </div>
+                        @endif
                         @if ($hasLeftoverTeams)
                             <fieldset class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
                                 <legend class="font-semibold">Leftover teams</legend>
@@ -52,7 +59,7 @@
                                 </label>
                             </fieldset>
                         @endif
-                        <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges())>Run ranked pot draw</button>
+                        <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges())>{{ $isCustomPotMode ? 'Run custom pot draw' : 'Run ranked pot draw' }}</button>
                     </form>
                 @endif
             </div>
@@ -69,6 +76,16 @@
             @if (! $activeDraw && $memberCount > 0 && $selectedTeamCount < $memberCount)
                 <div class="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
                     You currently have {{ $memberCount }} entrants but only {{ $selectedTeamCount }} teams available. Remove entrants or restore teams before running the draw.
+                </div>
+            @elseif (! $activeDraw && $isCustomPotMode && count($customPotWarnings) > 0)
+                <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
+                    <p class="font-semibold">Custom pots need attention before the draw can run.</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5">
+                        @foreach ($customPotWarnings as $customPotWarning)
+                            <li>{{ $customPotWarning }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="mt-3 text-sm font-semibold text-brand-blue underline" data-scroll-to="#custom-pots">Review custom pots</button>
                 </div>
             @elseif (! $activeDraw && $hasLeftoverTeams)
                 <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
@@ -223,9 +240,9 @@
                                     >
                                         @csrf
                                         <p class="font-medium text-amber-950">This will replace the active draw and notify entrants with email addresses. Previous draw results will be kept in the draw history.</p>
-                                        @unless ($hasLeftoverTeams)
+                                        @if (! $isCustomPotMode && ! $hasLeftoverTeams)
                                             <input type="hidden" name="leftover_team_strategy" value="{{ $removeLeftoversStrategy }}">
-                                        @endunless
+                                        @endif
                                         @if ($hasLeftoverTeams)
                                             <fieldset class="mt-3 rounded-lg border border-amber-200 bg-white/60 p-3 text-sm text-amber-950">
                                                 <legend class="font-semibold">Leftover teams</legend>
@@ -437,6 +454,147 @@
                     </form>
                 </div>
             </div>
+
+            @if ($isCustomPotMode)
+                @php
+                    $customPotAssignedIds = $sweepstake->pots
+                        ->flatMap(fn ($pot) => $pot->potTeams)
+                        ->pluck('sweepstake_team_id')
+                        ->unique();
+                    $unassignedCustomTeams = $selectedTeams
+                        ->reject(fn ($sweepstakeTeam) => $customPotAssignedIds->contains($sweepstakeTeam->id))
+                        ->values();
+                @endphp
+
+                <div id="custom-pots" class="sk-card mt-8 scroll-mt-6 overflow-hidden">
+                    <div class="sk-card-header">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <h2 class="font-semibold text-brand-navy">Custom pots</h2>
+                                <p class="mt-1 text-sm text-brand-muted">
+                                    {{ $sweepstake->pots->count() }} {{ \Illuminate\Support\Str::plural('pot', $sweepstake->pots->count()) }} · {{ $unassignedCustomTeams->count() }} unassigned {{ \Illuminate\Support\Str::plural('team', $unassignedCustomTeams->count()) }}
+                                </p>
+                            </div>
+
+                            @if ($sweepstake->isLockedForChanges())
+                                <p class="sk-badge sk-badge-neutral px-3 py-2 text-sm">Custom pots are locked after the draw.</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if (count($customPotWarnings) > 0)
+                        <div class="border-b border-brand-border bg-amber-50 px-5 py-4 text-sm text-amber-950">
+                            <p class="font-semibold">Resolve these before running a custom draw.</p>
+                            <ul class="mt-2 list-disc space-y-1 pl-5">
+                                @foreach ($customPotWarnings as $customPotWarning)
+                                    <li>{{ $customPotWarning }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <div class="grid divide-y divide-brand-border/70 lg:grid-cols-[0.9fr_1.1fr] lg:divide-x lg:divide-y-0">
+                        <div class="p-5">
+                            <form method="POST" action="{{ route('sweepstakes.pots.store', $sweepstake) }}" class="rounded-lg border border-brand-border bg-brand-soft p-4">
+                                @csrf
+                                <h3 class="font-semibold text-brand-navy">Add pot</h3>
+                                <label class="mt-3 block">
+                                    <span class="text-sm font-medium text-brand-navy">Pot name</span>
+                                    <input name="name" value="{{ old('name') }}" maxlength="80" placeholder="Pot {{ $sweepstake->pots->count() + 1 }}" class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                </label>
+                                <button class="sk-btn-green mt-3" @disabled($sweepstake->isLockedForChanges())>Create pot</button>
+                            </form>
+
+                            <div class="mt-5 space-y-3">
+                                @forelse ($sweepstake->pots as $pot)
+                                    @php
+                                        $includedPotTeams = $pot->potTeams
+                                            ->filter(fn ($potTeam) => (bool) $potTeam->sweepstakeTeam?->is_included && ! $potTeam->sweepstakeTeam?->is_removed)
+                                            ->values();
+                                    @endphp
+
+                                    <div class="rounded-lg border border-brand-border bg-white p-4">
+                                        <form method="POST" action="{{ route('sweepstakes.pots.update', [$sweepstake, $pot]) }}" class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                                            @csrf
+                                            @method('PATCH')
+                                            <label>
+                                                <span class="text-sm font-medium text-brand-navy">Pot {{ $pot->position }}</span>
+                                                <input name="name" value="{{ old('name', $pot->name) }}" required maxlength="80" class="sk-input" @disabled($sweepstake->isLockedForChanges())>
+                                            </label>
+                                            <button class="sk-btn-secondary" @disabled($sweepstake->isLockedForChanges())>Rename</button>
+                                        </form>
+
+                                        <div class="mt-3 rounded-lg border border-brand-border bg-brand-soft px-3 py-2 text-sm">
+                                            <p class="font-semibold text-brand-navy">{{ $includedPotTeams->count() }} / {{ $memberCount }} teams</p>
+                                            @if ($includedPotTeams->isNotEmpty())
+                                                <ul class="mt-2 space-y-1 text-brand-muted">
+                                                    @foreach ($includedPotTeams as $potTeam)
+                                                        <li><x-team-name :team="$potTeam->sweepstakeTeam->team" /></li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </div>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ route('sweepstakes.pots.destroy', [$sweepstake, $pot]) }}"
+                                            data-confirm-form
+                                            data-confirm-title="Delete custom pot"
+                                            data-confirm-message="Only empty custom pots can be deleted."
+                                            data-confirm-label="Delete pot"
+                                            data-confirm-variant="danger"
+                                            class="mt-3"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="sk-btn-danger" @disabled($sweepstake->isLockedForChanges() || $pot->potTeams->isNotEmpty())>Delete empty pot</button>
+                                        </form>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-brand-muted">No custom pots yet.</p>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ route('sweepstakes.pots.assignments', $sweepstake) }}" class="flex flex-col">
+                            @csrf
+                            @method('PATCH')
+
+                            <div class="border-b border-brand-border bg-blue-50/50 px-5 py-4">
+                                <h3 class="font-semibold text-brand-navy">Team pot assignments</h3>
+                                <p class="mt-1 text-sm text-brand-muted">Included teams stay in the draw; unassigned teams block custom pot draws.</p>
+                            </div>
+
+                            <div class="max-h-[32rem] flex-1 overflow-y-auto divide-y divide-brand-border/70">
+                                @forelse ($selectedTeams as $sweepstakeTeam)
+                                    @php
+                                        $selectedPotId = old("assignments.{$sweepstakeTeam->id}", $sweepstakeTeam->potAssignment?->sweepstake_pot_id);
+                                    @endphp
+
+                                    <label class="grid gap-3 px-5 py-3 text-sm transition hover:bg-blue-50/70 sm:grid-cols-[1fr_13rem] sm:items-center">
+                                        <span class="min-w-0 font-semibold text-brand-navy">
+                                            <x-team-name :team="$sweepstakeTeam->team" />
+                                            <span class="text-brand-muted">#{{ $sweepstakeTeam->team->fifa_ranking ?? 'n/a' }}</span>
+                                        </span>
+                                        <select name="assignments[{{ $sweepstakeTeam->id }}]" class="sk-input" @disabled($sweepstake->isLockedForChanges() || $sweepstake->pots->isEmpty())>
+                                            <option value="">Unassigned</option>
+                                            @foreach ($sweepstake->pots as $pot)
+                                                <option value="{{ $pot->id }}" @selected((string) $selectedPotId === (string) $pot->id)>{{ $pot->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                @empty
+                                    <p class="px-5 py-4 text-sm text-brand-muted">No included teams available.</p>
+                                @endforelse
+                            </div>
+
+                            <div class="border-t border-brand-border px-5 py-4">
+                                <button class="sk-btn-green" @disabled($sweepstake->isLockedForChanges() || $sweepstake->pots->isEmpty())>Save pot assignments</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
         </section>
 
         <aside class="space-y-6">
@@ -474,6 +632,26 @@
                             <option value="{{ \App\Models\Sweepstake::STATUS_OPEN }}" @selected(old('status', $sweepstake->status) === \App\Models\Sweepstake::STATUS_OPEN)>Open</option>
                         </select>
                     </label>
+
+                    <fieldset>
+                        <legend class="text-sm font-medium text-brand-navy">Draw rule</legend>
+                        <div class="mt-2 space-y-2">
+                            <label class="flex gap-2 rounded-lg border border-brand-border bg-white px-3 py-2 text-sm text-brand-muted">
+                                <input type="radio" name="pot_mode" value="{{ \App\Models\Sweepstake::POT_MODE_AUTO }}" class="mt-1 border-brand-border text-brand-green" @checked(old('pot_mode', $sweepstake->pot_mode) === \App\Models\Sweepstake::POT_MODE_AUTO) @disabled($sweepstake->isLockedForChanges())>
+                                <span>
+                                    <span class="block font-semibold text-brand-navy">Auto pots</span>
+                                    <span>Use stored rankings to create even pots.</span>
+                                </span>
+                            </label>
+                            <label class="flex gap-2 rounded-lg border border-brand-border bg-white px-3 py-2 text-sm text-brand-muted">
+                                <input type="radio" name="pot_mode" value="{{ \App\Models\Sweepstake::POT_MODE_CUSTOM }}" class="mt-1 border-brand-border text-brand-green" @checked(old('pot_mode', $sweepstake->pot_mode) === \App\Models\Sweepstake::POT_MODE_CUSTOM) @disabled($sweepstake->isLockedForChanges())>
+                                <span>
+                                    <span class="block font-semibold text-brand-navy">Custom pots</span>
+                                    <span>Use manually assigned pot groups.</span>
+                                </span>
+                            </label>
+                        </div>
+                    </fieldset>
                 </div>
 
                 <button class="sk-btn-green mt-5" @disabled($sweepstake->isLockedForChanges())>Save settings</button>
@@ -498,6 +676,10 @@
                     <div class="flex justify-between gap-4">
                         <dt class="text-brand-muted">Draw mode</dt>
                         <dd class="font-semibold text-brand-navy">Ranked pots</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-brand-muted">Draw rule</dt>
+                        <dd class="font-semibold text-brand-navy">{{ $sweepstake->potModeLabel() }}</dd>
                     </div>
                     <div class="flex justify-between gap-4">
                         <dt class="text-brand-muted">Teams per entrant</dt>
@@ -617,6 +799,7 @@
                                 </div>
 
                                 <p class="mt-2 text-brand-muted">{{ $draw->assignments->count() }} {{ \Illuminate\Support\Str::plural('assignment', $draw->assignments->count()) }}</p>
+                                <p class="mt-1 text-brand-muted">Draw rule: {{ $draw->potModeLabel() }}</p>
                                 @if ($draw->leftover_strategy)
                                     <p class="mt-1 text-brand-muted">{{ $draw->leftoverStrategyLabel() }}</p>
                                 @endif
