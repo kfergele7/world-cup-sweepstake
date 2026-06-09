@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sweepstake_id',
     'name',
     'position',
+    'teams_per_entrant',
 ])]
 class SweepstakePot extends Model
 {
@@ -21,6 +22,7 @@ class SweepstakePot extends Model
     {
         return [
             'position' => 'integer',
+            'teams_per_entrant' => 'integer',
         ];
     }
 

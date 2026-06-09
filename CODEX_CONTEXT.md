@@ -43,7 +43,7 @@ The Auto pots draw flow is:
 
 Example: 7 entrants and 48 selected teams means 6 teams per entrant, with 6 leftover teams. The admin can either use all 48 teams with 6 entrants receiving one extra team, or remove the 6 lowest-ranked teams and run an even 42-team draw.
 
-Custom pots use admin-created `SweepstakePot` rows and `SweepstakePotTeam` assignments. A custom draw requires every included team to be assigned to exactly one custom pot, and every custom pot must contain exactly one team per entrant. The draw then shuffles each pot and assigns one team from each custom pot to every entrant.
+Custom pots use admin-created `SweepstakePot` rows and `SweepstakePotTeam` assignments. Each pot has a `teams_per_entrant` setting. A custom draw ignores unassigned included teams, ignores removed teams, shuffles each active pot and draws `entrant_count * teams_per_entrant` teams from that pot. Extra assigned teams in a pot are left unused, not removed. At least one custom pot must have `teams_per_entrant > 0`, and active pots must have enough eligible assigned teams for the configured count.
 
 The current implementation is `App\Actions\RunRankedPotDraw`. Re-runs require a plain-text reason, supersede the previous active draw and preserve previous assignments in draw history. Cancelling the active draw requires a reason, marks that draw as cancelled and reopens setup without deleting previous assignments.
 
@@ -66,7 +66,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 
 - Use all entrants in the sweepstake for the MVP draw, whether paid or unpaid.
 - A sweepstake can have up to 48 entrants.
-- There must be at least one included team available for every entrant; adding entrants and running draws are blocked when entrant count would exceed included team count.
+- There must be at least one drawable team available for every entrant; adding entrants is capped by included team count and custom draws validate against assigned active custom pot teams.
 - Treat paid/unpaid as an admin tracking field only at this stage.
 - Record entrant source as `manual`, `join_link` or `pin`.
 - Allow the owning admin to edit sweepstake name, entry fee, currency and draft/open status before the draw.
@@ -75,7 +75,10 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Allow the owning admin to switch between Auto pots and Custom pots while setup is open; lock the choice while an active draw exists, then allow changes again after cancellation/reopen.
 - If teams divide evenly by entrants, every entrant receives the same number of teams.
 - If teams do not divide evenly by entrants, the admin must explicitly choose whether to randomly assign leftover teams or remove the lowest-ranked leftover teams for an even draw.
-- Custom pots require each included team to be assigned to one custom pot, and each custom pot must contain exactly one team per entrant before the custom draw can run.
+- Custom pots require each active pot to have enough eligible assigned teams for its `teams_per_entrant` value.
+- Unassigned included teams are ignored in Custom pots mode and are not silently removed.
+- Extra assigned teams in a custom pot are left unused.
+- At least one custom pot must give entrants teams.
 - Removing a team from a sweepstake clears any custom pot assignment for that sweepstake team.
 - Do not allow duplicate team assignments within the same draw version.
 - Allow a controlled re-run only with a required reason; keep setup locked and re-randomise the current included entrants/teams.
@@ -94,18 +97,20 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 
 1. Register or sign in as an admin.
 2. Create a sweepstake from the dashboard.
-3. Edit basic sweepstake settings such as name, entry fee, currency and draft/open status before the draw.
+3. Edit basic sweepstake settings such as name, entry fee, currency, draft/open status and draw rule before the draw.
 4. Share the join link or join code.
 5. Review joined entrants, add offline entrants manually and mark paid entrants.
 6. Remove entrants before the draw if needed.
 7. Bulk remove or restore teams for that sweepstake.
 8. Choose Auto pots or Custom pots while setup is open.
-9. If Custom pots is selected, create pots and assign included teams so each pot has one team per entrant.
+9. If Custom pots is selected, create pots, set each pot's teams per entrant and assign teams that should be eligible.
 10. Add or edit prize payouts.
 11. Choose a leftover team strategy when needed for Auto pots and run the draw.
 12. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
 13. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
 14. If setup was wrong after a draw, cancel the active draw with a clear reason, make changes and run a new draw.
+
+The sweepstake admin page is organised into tabs: Overview, Entrants, Teams, Pots, Draw & Results and Settings & Prizes.
 
 ## Entrant Journey
 

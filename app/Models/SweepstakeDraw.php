@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'ran_at',
     'rerun_of_draw_id',
     'pot_mode',
+    'custom_pot_summary',
     'leftover_strategy',
     'selected_team_count',
     'base_teams_per_member',
@@ -42,6 +43,7 @@ class SweepstakeDraw extends Model
         return [
             'base_teams_per_member' => 'integer',
             'cancelled_at' => 'datetime',
+            'custom_pot_summary' => 'array',
             'leftover_team_count' => 'integer',
             'ran_at' => 'datetime',
             'selected_team_count' => 'integer',

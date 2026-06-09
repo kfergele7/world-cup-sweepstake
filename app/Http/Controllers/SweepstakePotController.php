@@ -23,6 +23,7 @@ class SweepstakePotController extends Controller
 
         $attributes = $request->validate([
             'name' => ['nullable', 'string', 'max:80'],
+            'teams_per_entrant' => ['required', 'integer', 'min:0', 'max:48'],
         ]);
 
         $position = (int) $sweepstake->pots()->max('position') + 1;
@@ -31,6 +32,7 @@ class SweepstakePotController extends Controller
         $sweepstake->pots()->create([
             'name' => $name,
             'position' => $position,
+            'teams_per_entrant' => $attributes['teams_per_entrant'],
         ]);
 
         return back()->with('status', 'Custom pot created.');
@@ -49,12 +51,18 @@ class SweepstakePotController extends Controller
 
         $attributes = $request->validate([
             'name' => ['required', 'string', 'max:80'],
+            'position' => ['required', 'integer', 'min:1', 'max:99'],
+            'teams_per_entrant' => ['required', 'integer', 'min:0', 'max:48'],
         ], [
             'name.required' => 'Please enter a pot name.',
+            'teams_per_entrant.required' => 'Please enter how many teams each entrant gets from this pot.',
+            'teams_per_entrant.integer' => 'Teams per entrant must be a whole number.',
         ]);
 
         $pot->update([
             'name' => trim($attributes['name']),
+            'position' => $attributes['position'],
+            'teams_per_entrant' => $attributes['teams_per_entrant'],
         ]);
 
         return back()->with('status', 'Custom pot renamed.');

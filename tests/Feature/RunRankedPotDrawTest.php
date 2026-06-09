@@ -133,23 +133,24 @@ class RunRankedPotDrawTest extends TestCase
         ]);
     }
 
-    public function test_it_assigns_one_team_from_each_custom_pot_to_every_entrant(): void
+    public function test_custom_pot_draw_uses_only_the_configured_number_of_teams_from_broad_pots(): void
     {
-        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 6);
+        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 22);
         $sweepstake->update([
             'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
         ]);
         $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->get();
 
-        $this->createPot($sweepstake, 'Top seeds', $teams->take(3));
-        $this->createPot($sweepstake, 'Second seeds', $teams->slice(3)->values());
+        $this->createPot($sweepstake, 'Favourites', $teams->take(9), teamsPerEntrant: 1);
+        $this->createPot($sweepstake, 'Strong contenders', $teams->slice(9, 9)->values(), teamsPerEntrant: 1);
+        $this->createPot($sweepstake, 'Outsiders', $teams->slice(18, 4)->values(), teamsPerEntrant: 1);
 
         $assignments = app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
         $sweepstake->refresh();
 
-        $this->assertCount(6, $assignments);
+        $this->assertCount(9, $assignments);
         $this->assertSame(Sweepstake::STATUS_DRAWN, $sweepstake->status);
-        $this->assertSame(2, $sweepstake->teams_per_member);
+        $this->assertSame(3, $sweepstake->teams_per_member);
         $this->assertSame(0, $sweepstake->sweepstakeTeams()->where('is_removed', true)->count());
         $this->assertDatabaseHas('sweepstake_draws', [
             'sweepstake_id' => $sweepstake->id,
@@ -157,16 +158,16 @@ class RunRankedPotDrawTest extends TestCase
             'status' => SweepstakeDraw::STATUS_ACTIVE,
             'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
             'leftover_strategy' => null,
-            'selected_team_count' => 6,
-            'base_teams_per_member' => 2,
-            'leftover_team_count' => 0,
+            'selected_team_count' => 22,
+            'base_teams_per_member' => 3,
+            'leftover_team_count' => 13,
         ]);
 
         $sweepstake->members->each(function (SweepstakeMember $member): void {
-            $this->assertSame(2, $member->assignments()->count());
+            $this->assertSame(3, $member->assignments()->count());
         });
 
-        foreach ([1, 2] as $potNumber) {
+        foreach ([1, 2, 3] as $potNumber) {
             $assignmentsForPot = TeamAssignment::where('sweepstake_id', $sweepstake->id)
                 ->where('pot_number', $potNumber)
                 ->get();
@@ -174,24 +175,52 @@ class RunRankedPotDrawTest extends TestCase
             $this->assertSame(3, $assignmentsForPot->count());
             $this->assertSame(3, $assignmentsForPot->pluck('sweepstake_member_id')->unique()->count());
         }
+
+        $this->assertSame(9, TeamAssignment::where('sweepstake_id', $sweepstake->id)->pluck('team_id')->unique()->count());
+        $this->assertNotNull(SweepstakeDraw::where('sweepstake_id', $sweepstake->id)->firstOrFail()->custom_pot_summary);
     }
 
-    public function test_custom_pot_draw_rejects_unassigned_included_teams(): void
+    public function test_custom_pot_draw_gives_each_entrant_the_configured_number_from_each_pot(): void
     {
-        $sweepstake = $this->createSweepstake(memberCount: 2, teamCount: 4);
+        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 12);
         $sweepstake->update([
             'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
         ]);
+        $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->get();
 
-        $this->createPot($sweepstake, 'Only pot', $sweepstake->sweepstakeTeams()->orderBy('sort_order')->take(2)->get());
+        $this->createPot($sweepstake, 'Premium', $teams->take(7), teamsPerEntrant: 2);
+        $this->createPot($sweepstake, 'Long shots', $teams->slice(7, 3)->values(), teamsPerEntrant: 1);
+
+        app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
+
+        $memberAssignments = TeamAssignment::where('sweepstake_id', $sweepstake->id)->get();
+
+        $memberAssignments
+            ->groupBy('sweepstake_member_id')
+            ->each(function ($assignments): void {
+                $this->assertSame(3, $assignments->count());
+                $this->assertSame(2, $assignments->where('pot_number', 1)->count());
+                $this->assertSame(1, $assignments->where('pot_number', 2)->count());
+            });
+    }
+
+    public function test_custom_pot_draw_rejects_active_pots_without_enough_teams(): void
+    {
+        $sweepstake = $this->createSweepstake(memberCount: 3, teamCount: 4);
+        $sweepstake->update([
+            'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
+        ]);
+        $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->get();
+
+        $this->createPot($sweepstake, 'Short pot', $teams, teamsPerEntrant: 2);
 
         $this->expectException(DrawException::class);
-        $this->expectExceptionMessage('not assigned to a custom pot');
+        $this->expectExceptionMessage('Short pot has 4 teams and needs 6 teams');
 
         app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
     }
 
-    public function test_custom_pot_draw_rejects_pots_that_do_not_match_the_entrant_count(): void
+    public function test_custom_pot_draw_requires_at_least_one_active_pot(): void
     {
         $sweepstake = $this->createSweepstake(memberCount: 2, teamCount: 4);
         $sweepstake->update([
@@ -199,16 +228,39 @@ class RunRankedPotDrawTest extends TestCase
         ]);
         $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->get();
 
-        $this->createPot($sweepstake, 'Overfilled pot', $teams->take(3));
-        $this->createPot($sweepstake, 'Short pot', $teams->slice(3)->values());
+        $this->createPot($sweepstake, 'Inactive pot', $teams, teamsPerEntrant: 0);
 
         $this->expectException(DrawException::class);
-        $this->expectExceptionMessage('Overfilled pot has 3 teams');
+        $this->expectExceptionMessage('At least one custom pot must give entrants teams.');
 
         app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
     }
 
-    public function test_custom_pot_draw_rejects_removed_team_assignments(): void
+    public function test_unassigned_included_teams_do_not_block_custom_pots_or_get_removed(): void
+    {
+        $sweepstake = $this->createSweepstake(memberCount: 2, teamCount: 5);
+        $sweepstake->update([
+            'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
+        ]);
+        $teams = $sweepstake->sweepstakeTeams()->orderBy('sort_order')->get();
+        $unassignedTeam = $teams->last();
+
+        $this->createPot($sweepstake, 'Only pot', $teams->take(2), teamsPerEntrant: 1);
+
+        app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
+
+        $this->assertDatabaseMissing('team_assignments', [
+            'sweepstake_id' => $sweepstake->id,
+            'team_id' => $unassignedTeam->team_id,
+        ]);
+        $this->assertDatabaseHas('sweepstake_teams', [
+            'id' => $unassignedTeam->id,
+            'is_included' => true,
+            'is_removed' => false,
+        ]);
+    }
+
+    public function test_custom_pot_draw_ignores_removed_assigned_teams(): void
     {
         $sweepstake = $this->createSweepstake(memberCount: 2, teamCount: 4);
         $sweepstake->update([
@@ -223,13 +275,15 @@ class RunRankedPotDrawTest extends TestCase
             'removed_reason' => 'Removed by admin',
         ]);
 
-        $this->createPot($sweepstake, 'Valid pot', $teams->take(2));
-        $this->createPot($sweepstake, 'Stale pot', collect([$teams[2], $removedTeam]));
-
-        $this->expectException(DrawException::class);
-        $this->expectExceptionMessage('teams that are no longer in the draw');
+        $this->createPot($sweepstake, 'Valid pot', collect([$teams[0], $teams[1], $removedTeam]), teamsPerEntrant: 1);
 
         app(RunRankedPotDraw::class)->handle($sweepstake->fresh());
+
+        $this->assertDatabaseMissing('team_assignments', [
+            'sweepstake_id' => $sweepstake->id,
+            'team_id' => $removedTeam->team_id,
+        ]);
+        $this->assertSame(2, TeamAssignment::where('sweepstake_id', $sweepstake->id)->count());
     }
 
     public function test_it_rejects_a_second_draw_without_reset(): void
@@ -381,12 +435,13 @@ class RunRankedPotDrawTest extends TestCase
         return $sweepstake->fresh();
     }
 
-    private function createPot(Sweepstake $sweepstake, string $name, iterable $teams): SweepstakePot
+    private function createPot(Sweepstake $sweepstake, string $name, iterable $teams, int $teamsPerEntrant = 1): SweepstakePot
     {
         $pot = SweepstakePot::create([
             'sweepstake_id' => $sweepstake->id,
             'name' => $name,
             'position' => (int) $sweepstake->pots()->max('position') + 1,
+            'teams_per_entrant' => $teamsPerEntrant,
         ]);
 
         foreach (collect($teams)->values() as $index => $sweepstakeTeam) {

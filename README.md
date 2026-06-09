@@ -36,6 +36,6 @@ npm run build
 
 ## Current Foundation
 
-The app currently includes SweepKit branding, admin authentication, a dashboard, sweepstake creation, editable sweepstake settings, public join links with copy buttons, cleaned-up manual entrant management, entrant payment toggles, bulk per-sweepstake team selection, Auto pots, Custom pots, editable prizes, explicit leftover-team draw options for Auto pots, draw result emails, controlled draw re-runs with reasons, active draw cancellation/reopen setup, sidebar draw history and private entrant result pages with breadcrumbs.
+The app currently includes SweepKit branding, admin authentication, a dashboard, sweepstake creation, a tabbed sweepstake admin screen, editable sweepstake settings, public join links with copy buttons, cleaned-up manual entrant management, entrant payment toggles, bulk per-sweepstake team selection, Auto pots, flexible Custom pots, editable prizes, explicit leftover-team draw options for Auto pots, draw result emails, controlled draw re-runs with reasons, active draw cancellation/reopen setup, draw history and private entrant result pages with breadcrumbs.
 
-The draw service lives at `app/Actions/RunRankedPotDraw.php` and is covered by feature tests in `tests/Feature/RunRankedPotDrawTest.php`. Custom pot management is covered in `tests/Feature/SweepstakePotManagementTest.php`.
+The draw service lives at `app/Actions/RunRankedPotDraw.php` and is covered by feature tests in `tests/Feature/RunRankedPotDrawTest.php`. Custom pot management is covered in `tests/Feature/SweepstakePotManagementTest.php`. Custom pots use `teams_per_entrant`; extra teams in a pot and unassigned included teams are ignored for the custom draw, while removed teams are never drawn.

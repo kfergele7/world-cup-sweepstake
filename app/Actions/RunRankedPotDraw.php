@@ -26,7 +26,8 @@ class RunRankedPotDraw
      *     pot_mode: string,
      *     used_teams: Collection<int, SweepstakeTeam>,
      *     leftover_teams: Collection<int, SweepstakeTeam>,
-     *     pots: Collection<int, array{number: int, name: ?string, teams: Collection<int, SweepstakeTeam>}>
+     *     custom_pot_summary: ?array<int, array<string, int|string>>,
+     *     pots: Collection<int, array{number: int, name: ?string, teams_per_entrant: int, assigned_team_count: int, drawn_team_count: int, unused_team_count: int, teams: Collection<int, SweepstakeTeam>}>
      * }
      */
     public function buildPlan(Sweepstake $sweepstake, string $leftoverStrategy = SweepstakeDraw::LEFTOVER_STRATEGY_REMOVE_LOWEST_RANKED): array
@@ -77,6 +78,10 @@ class RunRankedPotDraw
             ->map(fn (Collection $teams, int $index): array => [
                 'number' => $index + 1,
                 'name' => null,
+                'teams_per_entrant' => 1,
+                'assigned_team_count' => $teams->count(),
+                'drawn_team_count' => $teams->count(),
+                'unused_team_count' => 0,
                 'teams' => $teams->values(),
             ]);
 
@@ -91,6 +96,7 @@ class RunRankedPotDraw
             'pot_mode' => Sweepstake::POT_MODE_AUTO,
             'used_teams' => $usedTeams,
             'leftover_teams' => $leftoverTeams,
+            'custom_pot_summary' => null,
             'pots' => $pots,
         ];
     }
@@ -148,6 +154,7 @@ class RunRankedPotDraw
                 'ran_at' => $assignedAt,
                 'rerun_of_draw_id' => $activeDraw?->id,
                 'pot_mode' => $plan['pot_mode'],
+                'custom_pot_summary' => $usesCustomPots ? $plan['custom_pot_summary'] : null,
                 'leftover_strategy' => $usesCustomPots ? null : $leftoverStrategy,
                 'selected_team_count' => $plan['selected_team_count'],
                 'base_teams_per_member' => $plan['teams_per_member'],
@@ -157,21 +164,32 @@ class RunRankedPotDraw
             foreach ($plan['pots'] as $pot) {
                 $members = $plan['members']->shuffle()->values();
                 $teams = $pot['teams']->shuffle()->values();
+                $teamsPerEntrant = $pot['teams_per_entrant'] ?? 1;
+                $teamIndex = 0;
 
-                foreach ($teams as $index => $sweepstakeTeam) {
-                    $assignments->push(TeamAssignment::create([
-                        'sweepstake_draw_id' => $draw->id,
-                        'sweepstake_id' => $sweepstake->id,
-                        'sweepstake_member_id' => $members[$index]->id,
-                        'team_id' => $sweepstakeTeam->team_id,
-                        'pot_number' => $pot['number'],
-                        'assigned_at' => $assignedAt,
-                    ]));
+                foreach ($members as $member) {
+                    for ($slot = 0; $slot < $teamsPerEntrant; $slot++) {
+                        $sweepstakeTeam = $teams[$teamIndex] ?? null;
+                        $teamIndex++;
 
-                    $sweepstakeTeam->forceFill([
-                        'pot_number' => $pot['number'],
-                        'sort_order' => $sweepstakeTeam->team->fifa_ranking,
-                    ])->save();
+                        if (! $sweepstakeTeam) {
+                            continue;
+                        }
+
+                        $assignments->push(TeamAssignment::create([
+                            'sweepstake_draw_id' => $draw->id,
+                            'sweepstake_id' => $sweepstake->id,
+                            'sweepstake_member_id' => $member->id,
+                            'team_id' => $sweepstakeTeam->team_id,
+                            'pot_number' => $pot['number'],
+                            'assigned_at' => $assignedAt,
+                        ]));
+
+                        $sweepstakeTeam->forceFill([
+                            'pot_number' => $pot['number'],
+                            'sort_order' => $sweepstakeTeam->team->fifa_ranking,
+                        ])->save();
+                    }
                 }
             }
 
@@ -229,7 +247,8 @@ class RunRankedPotDraw
      *     pot_mode: string,
      *     used_teams: Collection<int, SweepstakeTeam>,
      *     leftover_teams: Collection<int, SweepstakeTeam>,
-     *     pots: Collection<int, array{number: int, name: string, teams: Collection<int, SweepstakeTeam>}>
+     *     custom_pot_summary: array<int, array<string, int|string>>,
+     *     pots: Collection<int, array{number: int, name: string, teams_per_entrant: int, assigned_team_count: int, drawn_team_count: int, unused_team_count: int, teams: Collection<int, SweepstakeTeam>}>
      * }
      */
     private function buildCustomPotPlan(Sweepstake $sweepstake, EloquentCollection $members): array
@@ -251,65 +270,76 @@ class RunRankedPotDraw
             throw new DrawException('Create at least one custom pot before running the draw.');
         }
 
-        $selectedTeamIds = $selectedTeams->pluck('id')->unique()->values();
-        $potTeams = $pots->flatMap(fn ($pot) => $pot->potTeams);
-        $assignedTeamIds = $potTeams
-            ->pluck('sweepstake_team_id')
-            ->unique()
-            ->values();
-
-        if ($assignedTeamIds->diff($selectedTeamIds)->isNotEmpty()) {
-            throw new DrawException('Custom pots include teams that are no longer in the draw. Save the assignments again before running the draw.');
-        }
-
-        $unassignedCount = $selectedTeamIds->diff($assignedTeamIds)->count();
-
-        if ($unassignedCount > 0) {
-            $verb = $unassignedCount === 1 ? 'is' : 'are';
-
-            throw new DrawException("There {$verb} {$unassignedCount} included ".str('team')->plural($unassignedCount).' not assigned to a custom pot. Assign them to a pot or remove them from the draw.');
-        }
-
         $plannedPots = $pots
             ->values()
-            ->map(function ($pot, int $index) use ($memberCount, $selectedTeamIds): array {
-                $teams = $pot->potTeams
-                    ->filter(fn ($potTeam): bool => $selectedTeamIds->contains($potTeam->sweepstake_team_id))
+            ->map(function ($pot, int $index) use ($memberCount): array {
+                $teamsPerEntrant = max(0, (int) $pot->teams_per_entrant);
+                $eligibleTeams = $pot->potTeams
+                    ->filter(fn ($potTeam): bool => $potTeam->sweepstakeTeam
+                        && $potTeam->sweepstakeTeam->sweepstake_id === $pot->sweepstake_id
+                        && $potTeam->sweepstakeTeam->is_included
+                        && ! $potTeam->sweepstakeTeam->is_removed)
                     ->sortBy(fn ($potTeam): string => sprintf('%05d-%08d', $potTeam->position ?? 99999, $potTeam->id))
                     ->map(fn ($potTeam): SweepstakeTeam => $potTeam->sweepstakeTeam)
                     ->values();
+                $neededTeamCount = $memberCount * $teamsPerEntrant;
 
-                if ($teams->count() < $memberCount) {
-                    $missingCount = $memberCount - $teams->count();
-
-                    throw new DrawException("{$pot->name} has {$teams->count()} ".str('team')->plural($teams->count()).". Add {$missingCount} more ".str('team')->plural($missingCount).' before running the draw.');
+                if ($teamsPerEntrant > 0 && $eligibleTeams->count() < $neededTeamCount) {
+                    throw new DrawException("{$pot->name} has {$eligibleTeams->count()} ".str('team')->plural($eligibleTeams->count())." and needs {$neededTeamCount} ".str('team')->plural($neededTeamCount)." to give each entrant {$teamsPerEntrant} ".str('team')->plural($teamsPerEntrant).'.');
                 }
 
-                if ($teams->count() > $memberCount) {
-                    $extraCount = $teams->count() - $memberCount;
-
-                    throw new DrawException("{$pot->name} has {$teams->count()} ".str('team')->plural($teams->count()).". Remove {$extraCount} ".str('team')->plural($extraCount).' or move them to another pot before running the draw.');
-                }
+                $drawnTeams = $teamsPerEntrant > 0
+                    ? $eligibleTeams->shuffle()->take($neededTeamCount)->values()
+                    : collect();
 
                 return [
                     'number' => $index + 1,
                     'name' => $pot->name,
-                    'teams' => $teams,
+                    'teams_per_entrant' => $teamsPerEntrant,
+                    'assigned_team_count' => $eligibleTeams->count(),
+                    'drawn_team_count' => $drawnTeams->count(),
+                    'unused_team_count' => max($eligibleTeams->count() - $drawnTeams->count(), 0),
+                    'teams' => $drawnTeams,
                 ];
             });
+        $activePots = $plannedPots
+            ->filter(fn (array $pot): bool => $pot['teams_per_entrant'] > 0)
+            ->values();
+
+        if ($activePots->isEmpty()) {
+            throw new DrawException('At least one custom pot must give entrants teams.');
+        }
+
+        $teamsPerMember = $activePots->sum('teams_per_entrant');
+        $drawnTeams = $activePots
+            ->flatMap(fn (array $pot): Collection => $pot['teams'])
+            ->values();
+        $unusedTeams = $plannedPots->sum('unused_team_count');
+        $customPotSummary = $plannedPots
+            ->map(fn (array $pot): array => [
+                'number' => $pot['number'],
+                'name' => $pot['name'],
+                'teams_per_entrant' => $pot['teams_per_entrant'],
+                'assigned_team_count' => $pot['assigned_team_count'],
+                'drawn_team_count' => $pot['drawn_team_count'],
+                'unused_team_count' => $pot['unused_team_count'],
+            ])
+            ->values()
+            ->all();
 
         return [
             'members' => $members,
-            'selected_team_count' => $selectedTeams->count(),
+            'selected_team_count' => $plannedPots->sum('assigned_team_count'),
             'member_count' => $memberCount,
-            'teams_per_member' => $plannedPots->count(),
-            'usable_team_count' => $selectedTeams->count(),
-            'leftover_team_count' => 0,
+            'teams_per_member' => $teamsPerMember,
+            'usable_team_count' => $drawnTeams->count(),
+            'leftover_team_count' => $unusedTeams,
             'leftover_strategy' => null,
             'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
-            'used_teams' => $selectedTeams,
+            'used_teams' => $drawnTeams,
             'leftover_teams' => collect(),
-            'pots' => $plannedPots,
+            'custom_pot_summary' => $customPotSummary,
+            'pots' => $activePots,
         ];
     }
 

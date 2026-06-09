@@ -89,9 +89,70 @@ document.querySelectorAll('[data-manage-container]').forEach((container) => {
     });
 });
 
+const tabActivators = new Map();
+
+document.querySelectorAll('[data-tabs]').forEach((tabs) => {
+    const buttons = [...tabs.querySelectorAll('[data-tab-target]')];
+    const panels = [...tabs.querySelectorAll('[data-tab-panel]')];
+
+    if (buttons.length === 0 || panels.length === 0) {
+        return;
+    }
+
+    const tabNames = panels.map((panel) => panel.dataset.tabPanel);
+    const setActiveStyles = (button, isActive) => {
+        button.classList.toggle('border-brand-navy', isActive);
+        button.classList.toggle('bg-brand-navy', isActive);
+        button.classList.toggle('text-white', isActive);
+        button.classList.toggle('border-brand-border', !isActive);
+        button.classList.toggle('bg-white', !isActive);
+        button.classList.toggle('text-brand-muted', !isActive);
+        button.setAttribute('aria-current', isActive ? 'page' : 'false');
+    };
+    const activate = (tabName, updateHash = false) => {
+        const nextTabName = tabNames.includes(tabName) ? tabName : (tabs.dataset.defaultTab || tabNames[0]);
+
+        panels.forEach((panel) => {
+            panel.classList.toggle('hidden', panel.dataset.tabPanel !== nextTabName);
+        });
+
+        buttons.forEach((button) => {
+            setActiveStyles(button, button.dataset.tabTarget === nextTabName);
+        });
+
+        if (updateHash) {
+            window.history.replaceState(null, '', `#${nextTabName}`);
+        }
+    };
+    const initialTab = window.location.hash.replace('#', '') || tabs.dataset.defaultTab || tabNames[0];
+
+    tabActivators.set(tabs, activate);
+    activate(initialTab);
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            activate(button.dataset.tabTarget, true);
+        });
+    });
+
+    window.addEventListener('hashchange', () => {
+        activate(window.location.hash.replace('#', ''));
+    });
+});
+
 document.querySelectorAll('[data-scroll-to]').forEach((button) => {
     button.addEventListener('click', () => {
-        document.querySelector(button.dataset.scrollTo || '')?.scrollIntoView({
+        const target = document.querySelector(button.dataset.scrollTo || '');
+        const panel = target?.closest('[data-tab-panel]');
+        const tabs = panel?.closest('[data-tabs]');
+        const activate = tabs ? tabActivators.get(tabs) : null;
+
+        if (panel && activate) {
+            activate(panel.dataset.tabPanel, true);
+        }
+
+        target?.scrollIntoView({
             behavior: 'smooth',
             block: 'start',
         });

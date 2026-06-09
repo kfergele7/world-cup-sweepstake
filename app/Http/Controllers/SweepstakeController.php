@@ -98,6 +98,7 @@ class SweepstakeController extends Controller
         $selectedTeamCount = $selectedTeams->count();
         $leftoverTeamCount = $memberCount > 0 ? $selectedTeamCount % $memberCount : 0;
         $baseTeamsPerMember = $memberCount > 0 ? intdiv($selectedTeamCount, max($memberCount, 1)) : 0;
+        $customPotSummaries = $this->customPotSummaries($sweepstake, $memberCount);
 
         return view('sweepstakes.show', [
             'sweepstake' => $sweepstake,
@@ -121,7 +122,9 @@ class SweepstakeController extends Controller
             'selectedTeamCount' => $selectedTeamCount,
             'leftoverTeamCount' => $leftoverTeamCount,
             'baseTeamsPerMember' => $baseTeamsPerMember,
-            'customPotWarnings' => $this->customPotWarnings($sweepstake, $selectedTeams, $memberCount),
+            'customPotSummaries' => $customPotSummaries,
+            'customPotWarnings' => $this->customPotWarnings($sweepstake, $customPotSummaries),
+            'unassignedCustomTeamCount' => $this->unassignedCustomTeamCount($sweepstake, $selectedTeams),
             'entrantCapacity' => $sweepstake->maximumEntrants(),
             'latestCancelledDraw' => $sweepstake->draws
                 ->sortByDesc('version_number')
@@ -211,11 +214,66 @@ class SweepstakeController extends Controller
         return null;
     }
 
+    private function customPotSummaries(Sweepstake $sweepstake, int $memberCount): Collection
+    {
+        if ($sweepstake->pot_mode !== Sweepstake::POT_MODE_CUSTOM) {
+            return collect();
+        }
+
+        return $sweepstake->pots
+            ->values()
+            ->map(function ($pot, int $index) use ($memberCount): array {
+                $eligibleTeamCount = $pot->potTeams
+                    ->filter(fn ($potTeam): bool => $potTeam->sweepstakeTeam
+                        && $potTeam->sweepstakeTeam->sweepstake_id === $pot->sweepstake_id
+                        && $potTeam->sweepstakeTeam->is_included
+                        && ! $potTeam->sweepstakeTeam->is_removed)
+                    ->count();
+                $teamsPerEntrant = max(0, (int) $pot->teams_per_entrant);
+                $neededTeamCount = $memberCount * $teamsPerEntrant;
+                $drawnTeamCount = $teamsPerEntrant > 0
+                    ? min($eligibleTeamCount, $neededTeamCount)
+                    : 0;
+
+                return [
+                    'id' => $pot->id,
+                    'number' => $index + 1,
+                    'name' => $pot->name,
+                    'position' => $pot->position,
+                    'teams_per_entrant' => $teamsPerEntrant,
+                    'assigned_team_count' => $eligibleTeamCount,
+                    'needed_team_count' => $neededTeamCount,
+                    'drawn_team_count' => $drawnTeamCount,
+                    'unused_team_count' => max($eligibleTeamCount - $drawnTeamCount, 0),
+                    'is_active' => $teamsPerEntrant > 0,
+                    'has_enough_teams' => $teamsPerEntrant === 0 || $eligibleTeamCount >= $neededTeamCount,
+                ];
+            });
+    }
+
     /**
      * @param  Collection<int, SweepstakeTeam>  $selectedTeams
+     */
+    private function unassignedCustomTeamCount(Sweepstake $sweepstake, Collection $selectedTeams): int
+    {
+        $selectedTeamIds = $selectedTeams->pluck('id')->unique()->values();
+        $assignedTeamIds = $sweepstake->pots
+            ->flatMap(fn ($pot) => $pot->potTeams)
+            ->filter(fn ($potTeam): bool => $potTeam->sweepstakeTeam
+                && $potTeam->sweepstakeTeam->is_included
+                && ! $potTeam->sweepstakeTeam->is_removed)
+            ->pluck('sweepstake_team_id')
+            ->unique()
+            ->values();
+
+        return $selectedTeamIds->diff($assignedTeamIds)->count();
+    }
+
+    /**
+     * @param  Collection<int, array<string, int|string|bool>>  $customPotSummaries
      * @return array<int, string>
      */
-    private function customPotWarnings(Sweepstake $sweepstake, Collection $selectedTeams, int $memberCount): array
+    private function customPotWarnings(Sweepstake $sweepstake, Collection $customPotSummaries): array
     {
         if ($sweepstake->pot_mode !== Sweepstake::POT_MODE_CUSTOM) {
             return [];
@@ -223,40 +281,20 @@ class SweepstakeController extends Controller
 
         $warnings = [];
 
-        if ($sweepstake->pots->isEmpty()) {
+        if ($customPotSummaries->isEmpty()) {
             $warnings[] = 'Create at least one custom pot before running the draw.';
         }
 
-        $selectedTeamIds = $selectedTeams->pluck('id')->unique()->values();
-        $assignedTeamIds = $sweepstake->pots
-            ->flatMap(fn ($pot) => $pot->potTeams)
-            ->pluck('sweepstake_team_id')
-            ->unique()
-            ->values();
-
-        $invalidAssignmentCount = $assignedTeamIds->diff($selectedTeamIds)->count();
-
-        if ($invalidAssignmentCount > 0) {
-            $warnings[] = 'Some custom pot assignments point to teams that are no longer included. Save assignments to clear them.';
+        if ($customPotSummaries->isNotEmpty() && $customPotSummaries->where('is_active', true)->isEmpty()) {
+            $warnings[] = 'At least one custom pot must give entrants teams.';
         }
 
-        $unassignedCount = $selectedTeamIds->diff($assignedTeamIds)->count();
-
-        if ($unassignedCount > 0) {
-            $verb = $unassignedCount === 1 ? 'is' : 'are';
-            $warnings[] = "{$unassignedCount} included ".Str::plural('team', $unassignedCount)." {$verb} not assigned to a custom pot.";
-        }
-
-        if ($memberCount > 0) {
-            foreach ($sweepstake->pots as $pot) {
-                $includedPotTeamCount = $pot->potTeams
-                    ->filter(fn ($potTeam): bool => (bool) $potTeam->sweepstakeTeam?->is_included && ! $potTeam->sweepstakeTeam?->is_removed)
-                    ->count();
-
-                if ($includedPotTeamCount !== $memberCount) {
-                    $warnings[] = "{$pot->name} has {$includedPotTeamCount} ".Str::plural('team', $includedPotTeamCount)."; it needs exactly {$memberCount}.";
-                }
+        foreach ($customPotSummaries->where('is_active', true) as $summary) {
+            if ($summary['has_enough_teams']) {
+                continue;
             }
+
+            $warnings[] = "{$summary['name']} has {$summary['assigned_team_count']} ".Str::plural('team', $summary['assigned_team_count'])." and needs {$summary['needed_team_count']} ".Str::plural('team', $summary['needed_team_count'])." to give each entrant {$summary['teams_per_entrant']} ".Str::plural('team', $summary['teams_per_entrant']).'.';
         }
 
         return $warnings;

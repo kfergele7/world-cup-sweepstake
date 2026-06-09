@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Sweepstake;
+use App\Models\SweepstakeMember;
 use App\Models\SweepstakePot;
 use App\Models\SweepstakePotTeam;
 use App\Models\SweepstakeTeam;
@@ -24,11 +25,57 @@ class SweepstakePotManagementTest extends TestCase
             ->get(route('sweepstakes.show', $sweepstake))
             ->assertOk()
             ->assertSee('Run custom pot draw')
+            ->assertSee('Overview')
+            ->assertSee('Entrants')
+            ->assertSee('Teams')
+            ->assertSee('Pots')
+            ->assertSee('Draw &amp; Results', false)
+            ->assertSee('Settings &amp; Prizes', false)
             ->assertSee('Custom pots')
             ->assertSee('Team pot assignments')
             ->assertSee('Unassigned')
+            ->assertSee('Only teams assigned to a custom pot are included in a custom draw.')
             ->assertSee('Create at least one custom pot before running the draw.')
             ->assertDontSee('Leftover teams');
+    }
+
+    public function test_auto_pots_mode_shows_a_simple_pots_explanation(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 2, potMode: Sweepstake::POT_MODE_AUTO);
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('SweepKit will create pots automatically using stored rankings.')
+            ->assertSee('Switch to Custom pots in settings')
+            ->assertDontSee('Team pot assignments');
+    }
+
+    public function test_custom_pot_summary_shows_how_many_teams_will_be_drawn_and_left_out(): void
+    {
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 9);
+        $this->createMember($sweepstake, 'First Entrant');
+        $this->createMember($sweepstake, 'Second Entrant');
+        $this->createMember($sweepstake, 'Third Entrant');
+        $pot = $this->createPot($sweepstake, 'Favourites', teamsPerEntrant: 1);
+
+        $sweepstake->sweepstakeTeams()
+            ->orderBy('sort_order')
+            ->get()
+            ->each(fn (SweepstakeTeam $sweepstakeTeam, int $index): SweepstakePotTeam => SweepstakePotTeam::create([
+                'sweepstake_pot_id' => $pot->id,
+                'sweepstake_team_id' => $sweepstakeTeam->id,
+                'position' => $index + 1,
+            ]));
+
+        $this->actingAs($admin)
+            ->get(route('sweepstakes.show', $sweepstake))
+            ->assertOk()
+            ->assertSee('9 teams assigned')
+            ->assertSee('1 team per entrant')
+            ->assertSee('3 teams will be drawn and 6 will be left out.');
     }
 
     public function test_owning_admin_can_manage_custom_pots_and_assign_selected_teams(): void
@@ -40,6 +87,7 @@ class SweepstakePotManagementTest extends TestCase
         $this->actingAs($admin)
             ->post(route('sweepstakes.pots.store', $sweepstake), [
                 'name' => 'Original seeds',
+                'teams_per_entrant' => 1,
             ])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -49,15 +97,22 @@ class SweepstakePotManagementTest extends TestCase
         $this->actingAs($admin)
             ->patch(route('sweepstakes.pots.update', [$sweepstake, $firstPot]), [
                 'name' => 'Top seeds',
+                'position' => 2,
+                'teams_per_entrant' => 2,
             ])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
 
-        $this->assertSame('Top seeds', $firstPot->fresh()->name);
+        $firstPot->refresh();
+
+        $this->assertSame('Top seeds', $firstPot->name);
+        $this->assertSame(2, $firstPot->position);
+        $this->assertSame(2, $firstPot->teams_per_entrant);
 
         $this->actingAs($admin)
             ->post(route('sweepstakes.pots.store', $sweepstake), [
                 'name' => 'Second seeds',
+                'teams_per_entrant' => 1,
             ])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -180,7 +235,7 @@ class SweepstakePotManagementTest extends TestCase
         ]);
     }
 
-    private function createSweepstake(User $admin, int $teamCount): Sweepstake
+    private function createSweepstake(User $admin, int $teamCount, string $potMode = Sweepstake::POT_MODE_CUSTOM): Sweepstake
     {
         $sweepstake = Sweepstake::create([
             'user_id' => $admin->id,
@@ -189,7 +244,7 @@ class SweepstakePotManagementTest extends TestCase
             'join_code' => strtoupper(substr(uniqid(), -8)),
             'status' => Sweepstake::STATUS_OPEN,
             'draw_mode' => Sweepstake::DRAW_MODE_RANKED_POTS,
-            'pot_mode' => Sweepstake::POT_MODE_CUSTOM,
+            'pot_mode' => $potMode,
             'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
         ]);
 
@@ -211,12 +266,24 @@ class SweepstakePotManagementTest extends TestCase
         return $sweepstake;
     }
 
-    private function createPot(Sweepstake $sweepstake, string $name): SweepstakePot
+    private function createMember(Sweepstake $sweepstake, string $name): SweepstakeMember
+    {
+        return SweepstakeMember::create([
+            'sweepstake_id' => $sweepstake->id,
+            'name' => $name,
+            'email' => str($name)->slug()->append('@example.test')->toString(),
+            'join_token' => 'token-'.uniqid(),
+            'source' => SweepstakeMember::SOURCE_MANUAL,
+        ]);
+    }
+
+    private function createPot(Sweepstake $sweepstake, string $name, int $teamsPerEntrant = 1): SweepstakePot
     {
         return SweepstakePot::create([
             'sweepstake_id' => $sweepstake->id,
             'name' => $name,
             'position' => (int) $sweepstake->pots()->max('position') + 1,
+            'teams_per_entrant' => $teamsPerEntrant,
         ]);
     }
 }
