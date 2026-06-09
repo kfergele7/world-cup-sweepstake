@@ -10,13 +10,14 @@
         $customPotDrawnTeamCount = $customPotSummaries->sum('drawn_team_count');
         $customPotUnusedTeamCount = $customPotSummaries->sum('unused_team_count');
         $totalAssignedCustomPotTeams = $customPotSummaries->sum('assigned_team_count');
+        $hasPrizes = $sweepstake->prizes->isNotEmpty();
         $tabs = [
             'overview' => 'Overview',
             'entrants' => 'Entrants',
             'teams' => 'Teams',
             'pots' => 'Pots',
-            'draw-results' => 'Draw & Results',
             'settings-prizes' => 'Settings & Prizes',
+            'draw-results' => 'Draw & Results',
         ];
         $requestedTab = old('tab', request('tab', session('active_tab', 'overview')));
         $activeTab = array_key_exists($requestedTab, $tabs) ? $requestedTab : 'overview';
@@ -24,6 +25,7 @@
             $memberCount < 2 => 'Add at least two entrants before running the draw.',
             $isCustomPotMode && $sweepstake->pots->isEmpty() => 'Create custom pots, then assign teams to them.',
             $isCustomPotMode && count($customPotWarnings) > 0 => 'Review the Pots tab and resolve the custom pot warnings.',
+            ! $hasPrizes => 'Add at least one prize before running the draw.',
             ! $activeDraw => 'Run the draw when entrants, teams and prizes look right.',
             default => 'Review results and share entrant links if needed.',
         };
@@ -614,7 +616,13 @@
                     </div>
 
                     <div class="px-5 py-4">
-                        @if (! $activeDraw && $memberCount > 0 && $selectedTeamCount < $memberCount)
+                        @if (! $activeDraw && ! $hasPrizes)
+                            <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                                <p class="font-semibold">Add at least one prize before running the draw.</p>
+                                <p class="mt-1">Prizes help entrants understand what they are playing for. Add your prizes, then come back to run the draw.</p>
+                                <a href="{{ route('sweepstakes.show', ['sweepstake' => $sweepstake, 'tab' => 'settings-prizes']) }}" class="sk-btn-secondary mt-3 inline-flex">Add prizes</a>
+                            </div>
+                        @elseif (! $activeDraw && $memberCount > 0 && $selectedTeamCount < $memberCount)
                             <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                                 You currently have {{ $memberCount }} entrants but only {{ $selectedTeamCount }} teams available. Remove entrants or restore teams before running the draw.
                             </div>
@@ -642,6 +650,12 @@
                         @endif
 
                         @if ($activeDraw)
+                            @if (! $hasPrizes)
+                                <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                                    <p class="font-semibold">Add at least one prize before re-running the draw.</p>
+                                    <p class="mt-1">Prizes are required before draw actions can run.</p>
+                                </div>
+                            @endif
                             <div class="flex w-full flex-wrap gap-2">
                                 <details class="w-full sm:w-auto">
                                     <summary class="sk-btn-danger list-none">Re-run draw</summary>
@@ -678,7 +692,7 @@
                                             <span class="font-medium text-amber-950">Reason for re-running</span>
                                             <textarea name="reason" required rows="3" maxlength="1000" class="sk-input">{{ old('reason') }}</textarea>
                                         </label>
-                                        <button class="sk-btn-danger mt-3">Confirm re-run draw</button>
+                                        <button class="sk-btn-danger mt-3" @disabled(! $hasPrizes)>Confirm re-run draw</button>
                                     </form>
                                 </details>
 
@@ -705,6 +719,8 @@
                                     </form>
                                 </details>
                             </div>
+                        @elseif (! $hasPrizes)
+                            <p class="mt-4 text-sm font-semibold text-brand-muted">The draw will unlock after you add at least one prize.</p>
                         @else
                             <form
                                 method="POST"

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\DrawResultsReady;
+use App\Models\Prize;
 use App\Models\Sweepstake;
 use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeMember;
@@ -153,6 +154,13 @@ class SweepstakeDrawNotificationTest extends TestCase
             'status' => Sweepstake::STATUS_OPEN,
             'draw_mode' => Sweepstake::DRAW_MODE_RANKED_POTS,
             'leftover_rule' => Sweepstake::LEFTOVER_REMOVE_LOWEST_RANKED,
+        ]);
+
+        Prize::create([
+            'sweepstake_id' => $sweepstake->id,
+            'position' => 1,
+            'label' => 'Winner',
+            'amount' => 20,
         ]);
 
         foreach (range(1, $teamCount) as $index) {

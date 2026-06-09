@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Prize;
 use App\Models\Sweepstake;
 use App\Models\SweepstakeDraw;
 use App\Models\SweepstakeMember;
@@ -65,7 +66,7 @@ class SweepstakeResultsTest extends TestCase
             ->get(route('sweepstakes.show', $sweepstake))
             ->assertOk()
             ->assertSee('The draw has not been run yet.')
-            ->assertSee('Run the draw to assign teams to entrants.')
+            ->assertSee('Add at least one prize before running the draw.')
             ->assertDontSee('Alice Adams has 1 team');
     }
 
@@ -106,12 +107,13 @@ class SweepstakeResultsTest extends TestCase
             ->assertSee('Entrant teams')
             ->assertSee('Link Entrant')
             ->assertSeeText("You're entered. Your teams will appear here after the draw.")
+            ->assertDontSee('Full draw results')
             ->assertDontSee('Dashboard')
             ->assertDontSee('link@example.test')
             ->assertDontSee('Run ranked pot draw');
     }
 
-    public function test_entrant_private_page_shows_only_their_own_assigned_teams_after_the_draw(): void
+    public function test_entrant_private_page_shows_their_own_teams_first_and_full_draw_results_without_admin_data(): void
     {
         $admin = $this->createUser('admin@example.test');
         $sweepstake = $this->createSweepstake($admin, teamCount: 2);
@@ -131,10 +133,17 @@ class SweepstakeResultsTest extends TestCase
             ->assertSee('Team 1')
             ->assertSee('Flag 1')
             ->assertSee('Pot 1')
-            ->assertDontSee('Team 2')
+            ->assertSee('Full draw results')
+            ->assertSeeText("Everyone's teams from the active draw.")
+            ->assertSee('Alice Adams')
+            ->assertSee('Bob Brown')
+            ->assertSee('Team 2')
             ->assertDontSee('alice@example.test')
             ->assertDontSee('bob@example.test')
+            ->assertDontSee('alice-token')
+            ->assertDontSee('bob-token')
             ->assertDontSee('Run ranked pot draw')
+            ->assertDontSee('Copy private team link')
             ->assertDontSee('Private entrant view');
     }
 
@@ -178,8 +187,11 @@ class SweepstakeResultsTest extends TestCase
             ->assertSee('Draw rule: Auto pots')
             ->assertSee('Reason: Ryan was missed from the entrant list')
             ->assertSee('Team 2')
+            ->assertSee('Full draw results')
+            ->assertSee('Bob Brown')
             ->assertDontSee('bob@example.test')
-            ->assertDontSee('Bob Brown');
+            ->assertDontSee('bob-token')
+            ->assertDontSee('Run ranked pot draw');
     }
 
     public function test_unknown_entrant_token_returns_not_found(): void
@@ -241,7 +253,8 @@ class SweepstakeResultsTest extends TestCase
             ->assertOk()
             ->assertSee('🇦🇷')
             ->assertSee('Argentina')
-            ->assertDontSee('Unknown Team');
+            ->assertSee('Full draw results')
+            ->assertSee('Unknown Team');
 
         $this->get(route('entrants.show', $bob->join_token))
             ->assertOk()
@@ -254,6 +267,12 @@ class SweepstakeResultsTest extends TestCase
         $sweepstake = $this->createSweepstake($admin, teamCount: 4);
         $this->createMember($sweepstake, 'Alice Adams');
         $this->createMember($sweepstake, 'Bob Brown');
+        Prize::create([
+            'sweepstake_id' => $sweepstake->id,
+            'position' => 1,
+            'label' => 'Winner',
+            'amount' => 20,
+        ]);
 
         $this->actingAs($admin)
             ->get(route('sweepstakes.show', $sweepstake))

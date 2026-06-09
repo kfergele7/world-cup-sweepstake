@@ -72,6 +72,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Allow the owning admin to edit sweepstake name, entry fee, currency and draft/open status before the draw.
 - Require at least 2 entrants before a draw.
 - Require enough selected teams for all entrants.
+- Require at least one prize before the first draw or a draw re-run.
 - Allow the owning admin to switch between Auto pots and Custom pots while setup is open; lock the choice while an active draw exists, then allow changes again after cancellation/reopen.
 - If teams divide evenly by entrants, every entrant receives the same number of teams.
 - If teams do not divide evenly by entrants, the admin must explicitly choose whether to randomly assign leftover teams or remove the lowest-ranked leftover teams for an even draw.
@@ -92,7 +93,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Team names should render with `Team::displayFlag()` where a stored flag or safe country-code mapping exists; unknown codes render without a flag.
 - Admin pages should expose copy buttons for public join/private entrant links and avoid showing long raw URLs as visible text.
 - Team removal and restoration must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
-- Public entrant result pages must use `join_token`, not incremental entrant IDs, and must not expose entrant emails, other entrants' details or admin-only controls.
+- Public entrant result pages must use `join_token`, not incremental entrant IDs. After an active draw they show the entrant's own teams first, then the full active draw results by entrant name and team, without exposing emails, tokens or admin-only controls.
 
 ## Admin Journey
 
@@ -106,12 +107,12 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 8. Choose Auto pots or Custom pots while setup is open.
 9. If Custom pots is selected, create pots, set each pot's teams per entrant and bulk move selected teams into pots or Unassigned.
 10. Add or edit prize payouts.
-11. Choose a leftover team strategy when needed for Auto pots and run the draw.
+11. Choose a leftover team strategy when needed for Auto pots and run the draw. Draw actions stay locked until at least one prize exists.
 12. Review persisted assignments grouped by entrant and copy private entrant view links if needed.
 13. If needed, re-run the draw with a clear reason; the previous draw remains visible as superseded history.
 14. If setup was wrong after a draw, cancel the active draw with a clear reason, make changes and run a new draw.
 
-The sweepstake admin page is organised into tabs: Overview, Entrants, Teams, Pots, Draw & Results and Settings & Prizes. Tab state is persisted with a `tab` query parameter, hidden form fields and a one-request flashed `active_tab`, so admins land back on the relevant tab after submissions and validation errors.
+The sweepstake admin page is organised into tabs: Overview, Entrants, Teams, Pots, Settings & Prizes and Draw & Results. Tab state is persisted with a `tab` query parameter, hidden form fields and a one-request flashed `active_tab`, so admins land back on the relevant tab after submissions and validation errors.
 
 ## Entrant Journey
 
@@ -119,8 +120,9 @@ The sweepstake admin page is organised into tabs: Overview, Entrants, Teams, Pot
 2. Enter name and optional email.
 3. Land on a private entrant page backed by their `join_token`.
 4. Before the draw, see a waiting message.
-5. After the draw, view only their own assigned teams from the same private link.
-6. If the draw is re-run or cancelled, see their own draw history and the reason without seeing other entrants' private details.
+5. After the draw, view their own assigned teams first from the same private link.
+6. Review the full active draw results by entrant name and team, without emails, tokens or admin controls.
+7. If the draw is re-run or cancelled, see their own draw history and the reason without seeing other entrants' private details.
 
 ## Codex Workflow Expectations
 

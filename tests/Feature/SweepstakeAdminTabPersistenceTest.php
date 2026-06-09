@@ -220,6 +220,12 @@ class SweepstakeAdminTabPersistenceTest extends TestCase
         $sweepstake = $this->createSweepstake($admin, teamCount: 4, potMode: Sweepstake::POT_MODE_AUTO);
         $this->createMember($sweepstake, 'First Entrant');
         $this->createMember($sweepstake, 'Second Entrant');
+        Prize::create([
+            'sweepstake_id' => $sweepstake->id,
+            'position' => 1,
+            'label' => 'Winner',
+            'amount' => 20,
+        ]);
 
         $this->actingAs($admin)
             ->post(route('sweepstakes.draw.store', $sweepstake), [

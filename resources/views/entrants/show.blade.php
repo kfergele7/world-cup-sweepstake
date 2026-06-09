@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="max-w-2xl">
+    <section class="max-w-4xl">
         <nav aria-label="Breadcrumb" class="mb-5 text-sm">
             @if ($canViewAdminLinks)
                 <ol class="flex flex-wrap items-center gap-2 text-brand-muted">
@@ -49,6 +49,51 @@
                 </ul>
             @endif
         </div>
+
+        @if ($activeDraw && $fullDrawResults->isNotEmpty())
+            <div class="sk-card mt-6 overflow-hidden">
+                <div class="sk-card-header">
+                    <h2 class="font-semibold text-brand-navy">Full draw results</h2>
+                    <p class="mt-1 text-sm text-brand-muted">Everyone's teams from the active draw.</p>
+                </div>
+
+                <div class="divide-y divide-brand-border/70">
+                    @foreach ($fullDrawResults as $result)
+                        @php
+                            $entrant = $result['member'];
+                            $entrantAssignments = $result['assignments'];
+                        @endphp
+
+                        <div class="px-5 py-4">
+                            <h3 class="font-semibold text-brand-navy">
+                                {{ $entrant->name }}
+                                @if ($entrant->id === $member->id)
+                                    <span class="sk-badge sk-badge-blue ml-2 align-middle">You</span>
+                                @endif
+                            </h3>
+
+                            @if ($entrantAssignments->isNotEmpty())
+                                <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+                                    @foreach ($entrantAssignments as $assignment)
+                                        <li class="rounded-lg border border-brand-border bg-brand-soft px-3 py-2 text-sm">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <span class="font-semibold text-brand-navy">
+                                                    <x-team-name :team="$assignment->team" />
+                                                </span>
+                                                <span class="sk-badge sk-badge-blue">Pot {{ $assignment->pot_number ?? 'n/a' }}</span>
+                                            </div>
+                                            <p class="mt-1 text-xs text-brand-muted">Ranking {{ $assignment->team->fifa_ranking ?? 'n/a' }}</p>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p class="mt-2 text-sm text-brand-muted">No teams assigned.</p>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         @if ($draws->isNotEmpty())
             <div class="sk-card mt-6">

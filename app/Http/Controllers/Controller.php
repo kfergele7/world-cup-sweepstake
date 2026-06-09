@@ -13,8 +13,8 @@ abstract class Controller
         'entrants',
         'teams',
         'pots',
-        'draw-results',
         'settings-prizes',
+        'draw-results',
     ];
 
     protected function redirectToSweepstakeTab(Request $request, Sweepstake $sweepstake, string $fallbackTab): RedirectResponse

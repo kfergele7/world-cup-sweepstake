@@ -21,6 +21,12 @@ class SweepstakeDrawController extends Controller
     {
         abort_unless($sweepstake->user_id === $request->user()->id, 403);
 
+        if (! $this->hasPrizes($sweepstake)) {
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
+                'draw' => 'Add at least one prize before running the draw.',
+            ]);
+        }
+
         $strategy = $this->validatedLeftoverStrategy($request);
 
         try {
@@ -47,6 +53,12 @@ class SweepstakeDrawController extends Controller
         if (! $sweepstake->activeDraw()->exists()) {
             return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
                 'draw' => 'Run the first draw before re-running it.',
+            ]);
+        }
+
+        if (! $this->hasPrizes($sweepstake)) {
+            return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')->withErrors([
+                'draw' => 'Add at least one prize before running the draw.',
             ]);
         }
 
@@ -143,6 +155,11 @@ class SweepstakeDrawController extends Controller
                 'assignments.team',
             ])
             ->firstOrFail();
+    }
+
+    private function hasPrizes(Sweepstake $sweepstake): bool
+    {
+        return $sweepstake->prizes()->exists();
     }
 
     private function sendResultEmails(SweepstakeDraw $draw): void
