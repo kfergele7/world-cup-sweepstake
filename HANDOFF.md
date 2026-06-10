@@ -34,6 +34,8 @@ This pass improved the sweepstake detail tab navigation on mobile by allowing th
 
 This pass rebuilt the public homepage into a simple polished SweepKit landing page with hero, how-it-works cards, feature grid, fair draw, results/transparency, private beta/responsible use and final CTA sections. The home-page guest nav now labels the auth links as `Log in` and `Create a sweepstake` while keeping the existing routes.
 
+This pass refined the homepage spacing and visual hierarchy to feel calmer and less card-heavy, with larger section rhythm, lighter hero preview treatment, softer feature cards, a blue-tinted fair draw band, an unboxed responsible-use note and a more generous deep-navy final CTA.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -250,6 +252,14 @@ Homepage landing page pass checks:
 - `npm run build` passed.
 - `git diff --check` passed.
 - Browser visual checks at desktop and mobile widths confirmed the logged-in and logged-out homepages render the seven sections without horizontal overflow, preserve footer links, and keep CTA links pointing to existing `register`, `login` or `dashboard` routes.
+
+Homepage spacing refinement pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/js/app.js` only supplying shared helpers.
+- `php artisan test tests/Feature/PublicPolicyPagesTest.php` passed.
+- `npm run build` passed.
+- `git diff --check` passed.
+- Browser visual checks at desktop and mobile widths confirmed the refined homepage has more breathing room, no horizontal overflow, preserved CTA/footer links and sensible logged-in/logged-out nav.
 
 ## Known Issues Or Blockers
 
