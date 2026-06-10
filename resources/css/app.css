@@ -24,6 +24,29 @@
         @apply bg-brand-soft text-brand-navy antialiased;
     }
 
+    .homepage-gradient-bg {
+        background-color: #f6f9fb;
+        background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='156' viewBox='0 0 180 156'%3E%3Cg fill='none' stroke='%2306152D' stroke-opacity='0.04' stroke-width='1'%3E%3Cpath d='M45 1 89 26 89 78 45 103 1 78 1 26Z'/%3E%3Cpath d='M135 53 179 78 179 130 135 155 91 130 91 78Z'/%3E%3C/g%3E%3Cg fill='none' stroke='%231687E8' stroke-opacity='0.025' stroke-width='1'%3E%3Cpath d='M135 1 179 26 179 78 135 103 91 78 91 26Z'/%3E%3Cpath d='M45 53 89 78 89 130 45 155 1 130 1 78Z'/%3E%3C/g%3E%3C/svg%3E"),
+            radial-gradient(circle at 18% 12%, rgba(22, 135, 232, 0.16), transparent 30rem),
+            radial-gradient(circle at 84% 28%, rgba(22, 184, 78, 0.12), transparent 28rem),
+            radial-gradient(circle at 52% 86%, rgba(6, 21, 45, 0.07), transparent 34rem),
+            linear-gradient(135deg, #fbfcfd 0%, #eff7fb 42%, #f8fbf5 100%);
+        background-position:
+            center top,
+            10% 0%,
+            88% 20%,
+            50% 100%,
+            center;
+        background-size:
+            180px 156px,
+            128% 128%,
+            122% 122%,
+            118% 118%,
+            100% 100%;
+        animation: homepage-background-drift 42s ease-in-out infinite alternate;
+    }
+
     .sk-card {
         @apply rounded-lg border border-brand-border bg-brand-card shadow-sm shadow-brand-navy/5;
     }
@@ -82,5 +105,31 @@
 
     .sk-badge-neutral {
         @apply border-brand-border bg-brand-soft text-brand-muted;
+    }
+}
+
+@keyframes homepage-background-drift {
+    from {
+        background-position:
+            center top,
+            10% 0%,
+            88% 20%,
+            50% 100%,
+            center;
+    }
+
+    to {
+        background-position:
+            36px 24px,
+            14% 4%,
+            82% 26%,
+            54% 94%,
+            center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .homepage-gradient-bg {
+        animation: none;
     }
 }

@@ -30,6 +30,7 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee('Made for private group draws')
             ->assertSee('Social clubs')
             ->assertSee('Fundraising groups')
+            ->assertSee('Sports clubs')
             ->assertSee('Built for private group sweepstakes')
             ->assertSee('Private links for your group')
             ->assertSee('No payment processing inside SweepKit')

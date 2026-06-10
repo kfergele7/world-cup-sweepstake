@@ -42,6 +42,8 @@ This pass tightened the homepage section polish before launch: the audience stri
 
 This pass added a final subtle homepage background polish: the hero CTA reassurance line has more breathing room, the group-draw strip now includes Social clubs and Fundraising groups, and the homepage wrapper has a low-opacity animated radial background with a reduced-motion opt-out.
 
+This pass corrected the homepage background treatment: the inline Blade background styles were moved into `resources/css/app.css`, the homepage now uses a pale layered gradient with a very faint inline SVG hexagon texture, the audience strip has eight groups in a controlled 4x2 desktop grid and 2-column mobile grid, and the hero CTA spacing remains relaxed.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -301,6 +303,18 @@ Homepage background polish pass checks:
 - Browser visual checks at desktop and mobile widths confirmed the hero CTA/supporting-line spacing, Social clubs and Fundraising groups pills, audience wrapping, footer spacing, no horizontal overflow and the subtle homepage background treatment at `http://127.0.0.1:8001/`.
 - Browser CSS inspection confirmed the homepage reduced-motion media rule is present and disables the background animation for `prefers-reduced-motion: reduce`.
 - Local test path: open `http://127.0.0.1:8001/`, check the hero CTA spacing, the group-draw strip wrapping, the subtle background treatment and footer spacing at desktop and mobile widths.
+
+Homepage background correction pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/css/app.css` and `resources/js/app.js` loaded by Vite.
+- Files touched: `resources/views/welcome.blade.php`, `resources/css/app.css`, `tests/Feature/PublicPolicyPagesTest.php` and `HANDOFF.md`.
+- `npm run build` passed.
+- `git diff --check` passed.
+- `php artisan test` passed: 100 tests, 645 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser visual checks at desktop and mobile widths confirmed the CSS-owned SVG hex texture and radial gradient background, no horizontal overflow, readable cards/text, balanced footer spacing and the audience strip rendering as 4 columns x 2 rows on desktop and 2 columns on mobile.
+- Browser CSS inspection confirmed the reduced-motion media rule is present and disables the homepage background animation for `prefers-reduced-motion: reduce`.
+- Local test path: open `http://127.0.0.1:8001/`, check the full homepage background from hero to footer, the balanced audience strip and the footer spacing at desktop and mobile widths.
 
 ## Known Issues Or Blockers
 
