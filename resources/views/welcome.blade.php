@@ -10,6 +10,9 @@
             <p class="mt-4 max-w-2xl text-lg leading-8 text-brand-muted">
                 Invite entrants, track paid status and run a balanced ranked pot draw with clear results everyone can trust.
             </p>
+            <p class="mt-4 max-w-2xl rounded-lg border border-brand-border bg-white/75 px-4 py-3 text-sm leading-6 text-brand-muted">
+                SweepKit is currently in private beta for selected tester groups. If something does not look right, please let the organiser know or <a href="{{ route('feedback') }}" class="font-semibold text-brand-blue underline">send feedback</a>.
+            </p>
             <div class="mt-6 flex flex-wrap gap-3">
                 @auth
                     <a href="{{ route('dashboard') }}" class="sk-btn-green py-2.5">Open dashboard</a>

@@ -46,21 +46,21 @@
             <section>
                 <h2 class="text-base font-semibold text-brand-navy">Private Entrant Pages</h2>
                 <p class="mt-2">
-                    Entrant result pages are scoped by private tokens. Anyone with a valid private link may be able to view that entrant page, so organisers and entrants should keep those links safe.
+                    Entrant result pages are scoped by private tokens. Anyone with a valid private link may be able to view that entrant page, so organisers and entrants should keep those links safe. These pages are intended for the relevant entrant and organiser, not for public sharing.
                 </p>
             </section>
 
             <section>
                 <h2 class="text-base font-semibold text-brand-navy">Updating Or Removing Details</h2>
                 <p class="mt-2">
-                    Entrants who want their details updated or removed should contact the organiser of their sweepstake, or the SweepKit support contact shared with them. Organisers are responsible for keeping their sweepstake records appropriate and up to date.
+                    Entrants who want their details updated or removed should contact the organiser of their sweepstake, or email <a href="mailto:{{ config('support.email') }}" class="font-semibold text-brand-blue underline">{{ config('support.email') }}</a> if they need help reaching support. Organisers are responsible for keeping their sweepstake records appropriate and up to date.
                 </p>
             </section>
 
             <section>
                 <h2 class="text-base font-semibold text-brand-navy">Private Beta</h2>
                 <p class="mt-2">
-                    SweepKit is currently in private beta and may change as the product develops. The organiser is responsible for running their sweepstake appropriately and following applicable rules, including workplace rules and any relevant local laws. You can also read the <a href="{{ route('terms') }}" class="font-semibold text-brand-blue underline">Terms</a>.
+                    SweepKit is currently in private beta and may change as the product develops. The organiser is responsible for running their sweepstake appropriately and following applicable rules, including workplace rules and any relevant local laws. If something does not look right, you can <a href="{{ route('feedback') }}" class="font-semibold text-brand-blue underline">send feedback</a> or read the <a href="{{ route('terms') }}" class="font-semibold text-brand-blue underline">Terms</a>.
                 </p>
             </section>
         </div>

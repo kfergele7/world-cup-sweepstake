@@ -5,6 +5,9 @@
         <section>
             <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">SweepKit admin</p>
             <h1 class="mt-2 text-3xl font-black text-brand-navy">Dashboard</h1>
+            <p class="mt-4 rounded-lg border border-brand-border bg-white/75 px-4 py-3 text-sm leading-6 text-brand-muted">
+                SweepKit is currently in private beta. If something does not look right, please <a href="{{ route('feedback') }}" class="font-semibold text-brand-blue underline">send feedback</a> so it can be improved before wider use.
+            </p>
             <div id="app" data-page="dashboard" data-props='@json(['totals' => $totals])' class="mt-5"></div>
 
             <div class="sk-card mt-8 overflow-hidden">

@@ -142,6 +142,7 @@ class SweepstakeResultsTest extends TestCase
             ->assertDontSee('bob@example.test')
             ->assertDontSee('alice-token')
             ->assertDontSee('bob-token')
+            ->assertDontSee(route('entrants.show', $bob->join_token), false)
             ->assertDontSee('Run ranked pot draw')
             ->assertDontSee('Copy private team link')
             ->assertDontSee('Private entrant view');

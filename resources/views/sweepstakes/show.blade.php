@@ -277,6 +277,7 @@
                                     Included teams: {{ $selectedTeams->count() }} · Removed teams: {{ $removedTeams->count() }}
                                 </p>
                                 <p class="mt-1 text-xs text-brand-muted">Removed teams are never included in the draw.</p>
+                                <p class="mt-1 text-xs text-brand-muted">Team rankings are based on seeded FIFA ranking data and should be reviewed before wider launch.</p>
                             </div>
 
                             @if ($sweepstake->isLockedForChanges())

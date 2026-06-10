@@ -19,6 +19,7 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee(route('privacy'), false)
             ->assertSee('Terms')
             ->assertSee(route('terms'), false)
+            ->assertSee(route('feedback'), false)
             ->assertSee('Built by')
             ->assertSee('Element Seven')
             ->assertSee('https://elementseven.co', false);
@@ -63,7 +64,9 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee('manual tracking only')
             ->assertSee('draw notifications, cancellation notices, re-run notices')
             ->assertSee('private tokens')
+            ->assertSee('These pages are intended for the relevant entrant and organiser')
             ->assertSee('private beta')
+            ->assertSee(route('feedback'), false)
             ->assertSee(route('terms'), false);
     }
 
@@ -76,6 +79,23 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee('The organiser is responsible for making sure their sweepstake follows local rules, workplace rules and any relevant gambling or lottery laws.')
             ->assertSee('SweepKit does not collect entry fees or run the sweepstake on your behalf.')
             ->assertSee('does not process payments, hold funds or pay out prizes')
+            ->assertSee('only add entrants who have agreed to take part')
+            ->assertSee('must not use SweepKit unlawfully')
+            ->assertSee('Access may be restricted or removed')
+            ->assertSee(route('feedback'), false)
             ->assertSee(route('privacy'), false);
+    }
+
+    public function test_feedback_page_renders_public_support_details_safely(): void
+    {
+        config(['support.email' => 'support@example.test']);
+
+        $this->get(route('feedback'))
+            ->assertOk()
+            ->assertSee('Send feedback')
+            ->assertSee('Found a bug or have feedback?')
+            ->assertSee('support@example.test')
+            ->assertSee('mailto:support@example.test', false)
+            ->assertSee('Do not send passwords, payment details');
     }
 }

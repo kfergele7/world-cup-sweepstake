@@ -16,6 +16,8 @@ This pass added a compact global footer across the shared app layout, with links
 
 This pass updated the footer to show the dynamic current year and a Terms link on the left side while keeping the Element Seven credit unchanged.
 
+This pass prepared SweepKit for a small private beta by adding `/feedback` backed by `SUPPORT_EMAIL`, polishing Privacy/Terms beta language, adding calm private beta notes to the home and dashboard pages, improving draw/cancellation email copy, adding a team-ranking source note in the admin Team selection area and documenting production/deployment requirements.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -25,9 +27,9 @@ This pass updated the footer to show the dynamic current year and a Terms link o
 - Seeders: `DatabaseSeeder`, `TeamSeeder`.
 - Draw logic: `app/Actions/RunRankedPotDraw.php`, `app/Exceptions/DrawException.php`.
 - Mail: `app/Mail/DrawResultsReady.php`, `app/Mail/DrawCancelled.php`, `resources/views/mail/draw-results-ready.blade.php`, `resources/views/mail/draw-cancelled.blade.php`.
-- Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, custom pots, bulk pot assignment, entrants, editable prizes, first draw, reasoned draw re-runs and active draw cancellation.
+- Controllers and routes for auth, dashboard, public Privacy/Terms/feedback pages, sweepstake settings management, joining, tokenised entrant result pages, teams, custom pots, bulk pot assignment, entrants, editable prizes, first draw, reasoned draw re-runs and active draw cancellation.
 - Brand tokens and component classes: `resources/css/app.css`.
-- Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components, public Privacy Policy/Terms pages and lightweight JS for admin tabs, bulk counts, custom pot bulk selection, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
+- Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components, public Privacy Policy/Terms/feedback pages and lightweight JS for admin tabs, bulk counts, custom pot bulk selection, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
 - Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/PublicPolicyPagesTest.php`, `tests/Feature/SweepstakeAdminTabPersistenceTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeDrawPrizeRequirementTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePotManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
 - Flag helper tests: `tests/Unit/TeamFlagTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
@@ -74,7 +76,7 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - Browser smoke test at `http://127.0.0.1:8001`: landing page renders, registration form works, dashboard renders and Vue stats mount; current branding is SweepKit.
 - Attempted authenticated browser smoke tests for the admin UI; the in-app Browser loaded the app and the login form, but form submission did not navigate. Authenticated flows are covered by Laravel feature tests.
 
-Current passing test result: 98 tests, 600 assertions.
+Current passing test result: 99 tests, 620 assertions.
 
 Custom pot pass checks:
 
@@ -144,13 +146,28 @@ Footer year/Terms link pass checks:
 - `git diff --check` passed.
 - Browser smoke check in the in-app Browser verified the footer renders `© 2026 SweepKit · Privacy Policy · Terms`, with `/privacy`, `/terms` and `https://elementseven.co` links.
 
+Beta readiness pass checks:
+
+- `php artisan test tests/Feature/PublicPolicyPagesTest.php tests/Feature/SweepstakeDrawNotificationTest.php tests/Feature/SweepstakeDrawCancellationTest.php tests/Feature/SweepstakeResultsTest.php tests/Feature/SweepstakePotManagementTest.php` passed: 39 tests, 292 assertions.
+- `php artisan test` passed: 99 tests, 620 assertions.
+- `composer test` passed: 99 tests, 620 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `php artisan route:list` passed and shows 36 routes, including `/feedback`.
+- `git diff --check` passed.
+- Browser smoke check in the in-app Browser verified `http://127.0.0.1:8001/`, `/privacy`, `/terms` and `/feedback` render with footer Terms links and feedback/support links.
+
 ## Known Issues Or Blockers
 
 - Browser-level authenticated admin verification is limited in the current Codex thread because the in-app Browser did not submit the login form, though public page smoke testing works and authenticated admin flows are covered by feature tests.
 - There is no separate PIN entry route yet, although entrant source values still support `pin`.
 - Admin auth is intentionally minimal and does not include password reset/email verification.
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.
+- Production email links depend on `APP_URL`; set it to the real HTTPS domain before beta mail is sent.
+- `SUPPORT_EMAIL` is an environment placeholder and must be set to the real beta support inbox before testers use the feedback page.
 - Team seed rankings are a working April 2026 dataset and should be refreshed from FIFA before production launch.
+- SweepKit does not process payments. Entry fees, prize values and paid/unpaid status are organiser-managed tracking fields only.
+- There is no self-service sweepstake delete/data purge flow yet. Entrants can be removed before a draw or after cancellation/reopen; full sweepstake/data removal is currently a site-owner/developer task.
 - The admin settings, team selection and entrant UI are usable but still basic; dedicated edit pages/modals, search or select-all helpers may be nicer later.
 - Custom pot setup now supports bulk move actions and individual dropdown fine-tuning, but does not yet include auto-fill by ranking or drag/drop.
 - Admin tabs are lightweight Blade/JavaScript tabs backed by the `tab` query parameter and flashed tab state. Without JavaScript the sections remain available as normal page content.
@@ -158,13 +175,15 @@ Footer year/Terms link pass checks:
 
 ## Recommended Next Steps
 
-1. Add a dedicated PIN entry flow if PIN joining remains part of the intended MVP.
-2. Add auto-fill by ranking for Custom pots if admins want a faster ranked starting point.
-3. Add richer admin management for team search, select all/none and wider tournament configuration.
-4. Consider adding browser-level feature tests for copy feedback, confirmation modals and the Manage/Cancel layout once a browser runner is available.
-5. Consider extracting policies or form request classes once route/controller surface grows further.
-6. Add the final SweepKit logo asset and favicon once the brand mark is chosen.
-7. Refresh team rankings and group metadata from an authoritative source before launch.
+1. Configure `APP_URL`, production mail and `SUPPORT_EMAIL`, then run a deployed email-link smoke test before inviting beta groups.
+2. Add a tested self-service sweepstake deletion/data purge flow, or write an internal runbook for manual beta data removal.
+3. Add a dedicated PIN entry flow if PIN joining remains part of the intended MVP.
+4. Add auto-fill by ranking for Custom pots if admins want a faster ranked starting point.
+5. Add richer admin management for team search, select all/none and wider tournament configuration.
+6. Consider adding browser-level feature tests for copy feedback, confirmation modals and the Manage/Cancel layout once a browser runner is available.
+7. Consider extracting policies or form request classes once route/controller surface grows further.
+8. Add the final SweepKit logo asset and favicon once the brand mark is chosen.
+9. Refresh team rankings and group metadata from an authoritative source before launch.
 
 ## Local browser check
 

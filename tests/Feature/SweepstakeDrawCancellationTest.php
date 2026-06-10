@@ -13,6 +13,7 @@ use App\Models\TeamAssignment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class SweepstakeDrawCancellationTest extends TestCase
@@ -51,6 +52,25 @@ class SweepstakeDrawCancellationTest extends TestCase
         $this->assertSame(4, TeamAssignment::where('sweepstake_draw_id', $activeDraw->id)->count());
 
         Mail::assertSent(DrawCancelled::class, 2);
+        Mail::assertSent(DrawCancelled::class, function (DrawCancelled $mail): bool {
+            if ($mail->member->email !== 'alice@example.test') {
+                return false;
+            }
+
+            URL::forceRootUrl('https://beta.sweepkit.test');
+            URL::forceScheme('https');
+            $html = $mail->render();
+            URL::forceRootUrl(null);
+            URL::forceScheme(null);
+
+            return $mail->envelope()->subject === 'Your SweepKit draw was cancelled'
+                && str_contains($html, 'The organiser has cancelled the current SweepKit draw for Office Sweepstake.')
+                && str_contains($html, 'The organiser gave this reason:')
+                && str_contains($html, 'https://beta.sweepkit.test/entrants/')
+                && ! str_contains($html, 'bob@example.test')
+                && ! str_contains($html, 'http://127.0.0.1')
+                && ! str_contains($html, 'http://localhost');
+        });
     }
 
     public function test_cancelling_without_a_reason_is_rejected(): void

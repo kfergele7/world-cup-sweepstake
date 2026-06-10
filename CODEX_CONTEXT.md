@@ -6,7 +6,7 @@ SweepKit lets an admin create and manage a private 2026 FIFA World Cup sweepstak
 
 Admins can create a sweepstake, share a private join link or PIN-style code, track entrants, add entrants manually, mark entrants as paid, choose which teams are included, choose Auto pots or Custom pots, edit prize payouts and run a fair draw. Entrants can join from the public link without creating a full user account in the MVP, then use a private tokenised link to view their own assigned teams after the draw. Entrants with email addresses are notified when a draw, reasoned re-run or cancellation is completed.
 
-Public policy pages live at `/privacy` and `/terms`. The shared app layout includes a compact footer linking to the Privacy Policy and Element Seven.
+Public policy pages live at `/privacy` and `/terms`, with a beta feedback page at `/feedback`. The shared app layout includes a compact footer linking to the Privacy Policy, Terms and Element Seven.
 
 ## Stack
 
@@ -92,11 +92,16 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Send draw result emails to entrants who have an email address, using Laravel's configured mailer.
 - Warn when prize payouts exceed the collected paid-entry pot.
 - Prize rows can be added, edited, reordered and removed before a draw, with total prize payout shown against collected and expected pots.
+- SweepKit does not process payments; entry fees, prize amounts and paid/unpaid status are organiser-managed tracking fields only.
+- Email templates should generate absolute entrant links from `APP_URL`; production deployments must set the real HTTPS domain before sending beta emails.
 - Team names should render with `Team::displayFlag()` where a stored flag or safe country-code mapping exists; unknown codes render without a flag.
 - Admin pages should expose copy buttons for public join/private entrant links and avoid showing long raw URLs as visible text.
 - The global app footer should remain compact and subtle, with the Privacy Policy link and Element Seven credit visible across public, auth, entrant and admin pages.
+- Keep private beta positioning calm and clear, with `/feedback` available through the configured `SUPPORT_EMAIL` placeholder.
 - Team removal and restoration must be scoped to a sweepstake through `sweepstake_teams`, never by mutating the global team row.
 - Public entrant result pages must use `join_token`, not incremental entrant IDs. After an active draw they show the entrant's own teams first, then the full active draw results by entrant name and team, without exposing emails, tokens or admin-only controls.
+- Entrants can be removed before a draw or after cancelling/reopening setup. There is not yet a self-service sweepstake delete flow; site-owner data removal should be handled manually until a tested destructive flow exists.
+- Team ranking data is seeded and must be reviewed before wider launch or user-facing claims of current accuracy.
 
 ## Admin Journey
 

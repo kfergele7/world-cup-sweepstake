@@ -1,13 +1,19 @@
+@php
+    $teamPageUrl = route('entrants.show', $member->join_token);
+@endphp
+
 <p>Hi {{ $member->name }},</p>
 
 <p>
-    The draw for {{ $draw->sweepstake->name }} has been run on {{ $draw->ran_at->format('j M Y \a\t H:i') }}.
+    The draw for {{ $draw->sweepstake->name }} has been run in SweepKit.
     Your teams are listed below.
 </p>
 
 @if ($draw->reason)
-    <p><strong>Reason for re-running:</strong> {{ $draw->reason }}</p>
+    <p><strong>The organiser re-ran the draw because:</strong> {{ $draw->reason }}</p>
 @endif
+
+<p><strong>Your teams are:</strong></p>
 
 <ul>
     @foreach ($assignments as $assignment)
@@ -24,8 +30,10 @@
 </ul>
 
 <p>
-    You can also view your team page here:
-    <a href="{{ route('entrants.show', $member->join_token) }}">{{ route('entrants.show', $member->join_token) }}</a>
+    View your team page:
+    <a href="{{ $teamPageUrl }}">{{ $teamPageUrl }}</a>
 </p>
 
-<p>Good luck.</p>
+<p>If something does not look right, please contact the organiser.</p>
+
+<p>Good luck,<br>SweepKit</p>

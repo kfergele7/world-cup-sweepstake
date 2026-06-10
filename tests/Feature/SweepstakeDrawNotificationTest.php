@@ -13,6 +13,7 @@ use App\Models\TeamAssignment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class SweepstakeDrawNotificationTest extends TestCase
@@ -40,13 +41,24 @@ class SweepstakeDrawNotificationTest extends TestCase
                 return false;
             }
 
+            URL::forceRootUrl('https://beta.sweepkit.test');
+            URL::forceScheme('https');
             $html = $mail->render();
+            URL::forceRootUrl(null);
+            URL::forceScheme(null);
 
-            return str_contains($html, 'Office Sweepstake')
+            return $mail->envelope()->subject === 'Your SweepKit teams are ready'
+                && str_contains($html, 'The draw for Office Sweepstake has been run in SweepKit.')
+                && str_contains($html, 'Your teams are:')
+                && str_contains($html, 'View your team page')
                 && str_contains($html, $mail->assignments->first()->team->name)
-                && str_contains($html, route('entrants.show', $alice->join_token))
+                && str_contains($html, 'https://beta.sweepkit.test/entrants/alice-token')
+                && ! str_contains($html, 'http://127.0.0.1')
+                && ! str_contains($html, 'http://localhost')
                 && ! str_contains($html, 'no-email@example.test')
-                && ! str_contains($html, 'cara@example.test');
+                && ! str_contains($html, 'cara@example.test')
+                && ! str_contains($html, 'cara-token')
+                && ! str_contains($html, 'no-email-token');
         });
     }
 
@@ -88,7 +100,7 @@ class SweepstakeDrawNotificationTest extends TestCase
         Mail::assertSent(DrawResultsReady::class, function (DrawResultsReady $mail): bool {
             return $mail->draw->version_number === 2
                 && $mail->draw->reason === 'Ryan was missed from the entrant list'
-                && str_contains($mail->render(), 'Reason for re-running');
+                && str_contains($mail->render(), 'The organiser re-ran the draw because:');
         });
     }
 

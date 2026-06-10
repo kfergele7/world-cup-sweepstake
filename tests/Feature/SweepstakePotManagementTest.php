@@ -36,6 +36,7 @@ class SweepstakePotManagementTest extends TestCase
             ->assertSee('Settings &amp; Prizes', false)
             ->assertSee('Custom pots')
             ->assertSee('Team pot assignments')
+            ->assertSee('Team rankings are based on seeded FIFA ranking data and should be reviewed before wider launch.')
             ->assertSee('Select multiple teams and move them into a pot in one go.')
             ->assertSee('Move selected teams')
             ->assertSee('Move to Unassigned')

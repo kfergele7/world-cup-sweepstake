@@ -29,16 +29,23 @@
             </section>
 
             <section>
-                <h2 class="text-base font-semibold text-brand-navy">Private Links</h2>
+                <h2 class="text-base font-semibold text-brand-navy">Entrants And Links</h2>
                 <p class="mt-2">
-                    Entrant result pages use private token links. Organisers and entrants should avoid sharing private links with people who should not see those results.
+                    Organisers should only add entrants who have agreed to take part. Users should not misuse join links, invite codes or private result links, and should not share private entrant links with people who should not see those results.
+                </p>
+            </section>
+
+            <section>
+                <h2 class="text-base font-semibold text-brand-navy">Misuse</h2>
+                <p class="mt-2">
+                    Organisers and users must not use SweepKit unlawfully, deceptively or in a way that harms other people. Access may be restricted or removed if SweepKit is misused or if beta access needs to be limited.
                 </p>
             </section>
 
             <section>
                 <h2 class="text-base font-semibold text-brand-navy">Product Changes</h2>
                 <p class="mt-2">
-                    SweepKit is currently in private beta, so features, wording and workflows may change. For more detail on how information is handled, read the <a href="{{ route('privacy') }}" class="font-semibold text-brand-blue underline">Privacy Policy</a>.
+                    SweepKit is currently in private beta, so features, wording and workflows may change and bugs may appear while the product is being tested. For more detail on how information is handled, read the <a href="{{ route('privacy') }}" class="font-semibold text-brand-blue underline">Privacy Policy</a>. To report an issue, <a href="{{ route('feedback') }}" class="font-semibold text-brand-blue underline">send feedback</a>.
                 </p>
             </section>
         </div>

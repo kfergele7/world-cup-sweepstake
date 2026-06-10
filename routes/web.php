@@ -19,6 +19,7 @@ Route::get('/', function () {
 
 Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/terms', 'terms')->name('terms');
+Route::view('/feedback', 'feedback')->name('feedback');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
