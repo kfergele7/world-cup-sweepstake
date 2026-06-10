@@ -44,6 +44,8 @@ The draw service lives at `app/Actions/RunRankedPotDraw.php` and is covered by f
 
 ## Deployment Checklist
 
+For the fuller WHM/cPanel runbook, including server layout, `public_html` symlink checks, production `.env` placeholders, Mailgun DNS and route-cache caveats, see [`docs/deployment.md`](docs/deployment.md).
+
 Before using SweepKit outside local development:
 
 - Set `APP_ENV=production`.

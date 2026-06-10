@@ -18,6 +18,8 @@ This pass updated the footer to show the dynamic current year and a Terms link o
 
 This pass prepared SweepKit for a small private beta by adding `/feedback` backed by `SUPPORT_EMAIL`, polishing Privacy/Terms beta language, adding calm private beta notes to the home and dashboard pages, improving draw/cancellation email copy, adding a team-ranking source note in the admin Team selection area and documenting production/deployment requirements.
 
+This pass added a SweepKit-specific WHM/cPanel deployment runbook at `docs/deployment.md`, covering the `/home/sweepkit/laravel` app root, `/home/sweepkit/public_html -> /home/sweepkit/laravel/public` public root pattern, production `.env` placeholders, database setup, permissions, Mailgun DNS, Cloudflare/123-reg notes, route-cache warnings and verification steps.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -33,6 +35,7 @@ This pass prepared SweepKit for a small private beta by adding `/feedback` backe
 - Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/PublicPolicyPagesTest.php`, `tests/Feature/SweepstakeAdminTabPersistenceTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeDrawPrizeRequirementTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePotManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
 - Flag helper tests: `tests/Unit/TeamFlagTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
+- Deployment docs: `docs/deployment.md`.
 
 ## Setup Steps
 
@@ -157,6 +160,20 @@ Beta readiness pass checks:
 - `git diff --check` passed.
 - Browser smoke check in the in-app Browser verified `http://127.0.0.1:8001/`, `/privacy`, `/terms` and `/feedback` render with footer Terms links and feedback/support links.
 
+WHM/cPanel deployment docs pass checks:
+
+- `pwd` confirmed `/Users/kyleferguson/Documents/World Cup Sweepstake`.
+- `git status --short --branch` showed `main...origin/main`, the deployment docs changes and the pre-existing untracked `extra/` directory.
+- `git pull` reported `Already up to date.`
+- `git log --oneline -5` and `git remote -v` confirmed the current branch history and `git@github.com:kfergele7/world-cup-sweepstake.git`.
+- Read `CODEX_CONTEXT.md`, `HANDOFF.md`, `README.md`, `routes/web.php`, `composer.json` and `package.json`.
+- `php artisan test` passed: 99 tests, 620 assertions.
+- `composer test` passed: 99 tests, 620 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `php artisan route:list` passed and shows 36 routes.
+- `git diff --check` passed.
+
 ## Known Issues Or Blockers
 
 - Browser-level authenticated admin verification is limited in the current Codex thread because the in-app Browser did not submit the login form, though public page smoke testing works and authenticated admin flows are covered by feature tests.
@@ -165,6 +182,8 @@ Beta readiness pass checks:
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.
 - Production email links depend on `APP_URL`; set it to the real HTTPS domain before beta mail is sent.
 - `SUPPORT_EMAIL` is an environment placeholder and must be set to the real beta support inbox before testers use the feedback page.
+- Production Mailgun sending requires the appropriate Symfony Mailgun transport packages or a different configured mailer; the current `composer.json` does not yet include those Mailgun packages.
+- Do not run `php artisan route:cache` until the closure route in `routes/web.php` is refactored and route caching is tested.
 - Team seed rankings are a working April 2026 dataset and should be refreshed from FIFA before production launch.
 - SweepKit does not process payments. Entry fees, prize values and paid/unpaid status are organiser-managed tracking fields only.
 - There is no self-service sweepstake delete/data purge flow yet. Entrants can be removed before a draw or after cancellation/reopen; full sweepstake/data removal is currently a site-owner/developer task.
