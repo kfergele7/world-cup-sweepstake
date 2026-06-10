@@ -36,7 +36,7 @@ npm run build
 
 ## Current Foundation
 
-The app currently includes SweepKit branding, admin authentication, a dashboard, sweepstake creation, a tabbed sweepstake admin screen with tab-aware redirects, editable sweepstake settings, public join links with copy buttons, cleaned-up manual entrant management, entrant payment toggles, bulk per-sweepstake team selection, Auto pots, flexible Custom pots, editable prizes, explicit leftover-team draw options for Auto pots, draw result emails, controlled draw re-runs with reasons, active draw cancellation/reopen setup, draw history and private entrant result pages with breadcrumbs.
+The app currently includes SweepKit branding, a compact global footer, public Privacy Policy and Terms pages, admin authentication, a dashboard, sweepstake creation, a tabbed sweepstake admin screen with tab-aware redirects, editable sweepstake settings, public join links with copy buttons, cleaned-up manual entrant management, entrant payment toggles, bulk per-sweepstake team selection, Auto pots, flexible Custom pots, editable prizes, explicit leftover-team draw options for Auto pots, draw result emails, controlled draw re-runs with reasons, active draw cancellation/reopen setup, draw history and private entrant result pages with breadcrumbs.
 
 Admins must add at least one prize before running or re-running a draw. Entrant private result pages show the entrant's own teams first, then the full active draw results by entrant name and team without exposing emails, tokens or admin controls.
 

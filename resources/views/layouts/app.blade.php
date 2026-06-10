@@ -9,7 +9,7 @@
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
     </head>
-    <body class="sk-shell font-sans">
+    <body class="sk-shell flex min-h-screen flex-col font-sans">
         <header class="border-b border-brand-border bg-white/90 backdrop-blur">
             <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
@@ -32,7 +32,7 @@
             </nav>
         </header>
 
-        <main class="mx-auto max-w-6xl px-4 py-8">
+        <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
             @if (session('status'))
                 <div class="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-900 shadow-sm">
                     {{ session('status') }}
@@ -52,6 +52,21 @@
 
             @yield('content')
         </main>
+
+        <footer class="border-t border-brand-border bg-white/80 text-xs text-brand-muted">
+            <div class="mx-auto flex min-h-[30px] max-w-6xl flex-col items-center justify-between gap-1 px-4 py-1.5 sm:flex-row">
+                <p class="flex flex-wrap items-center justify-center gap-2">
+                    <span>&copy; SweepKit</span>
+                    <span aria-hidden="true">&middot;</span>
+                    <a href="{{ route('privacy') }}" class="font-medium transition hover:text-brand-navy">Privacy Policy</a>
+                </p>
+
+                <p>
+                    Built by
+                    <a href="https://elementseven.co" class="font-medium transition hover:text-brand-navy">Element Seven</a>
+                </p>
+            </div>
+        </footer>
 
         <dialog id="confirm-dialog" class="w-[min(92vw,28rem)] rounded-lg border border-brand-border bg-white p-0 text-brand-navy shadow-xl backdrop:bg-brand-navy/50">
             <div class="p-5">

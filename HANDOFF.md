@@ -12,6 +12,8 @@ The previous pass added draw-rule selection between Auto pots and Custom pots, t
 
 This pass reordered admin tabs to put Settings & Prizes before Draw & Results, made at least one prize mandatory before first draws and re-runs, added a no-prize warning/CTA in the draw panel and updated entrant private pages so they show the entrant's own teams first followed by the full active draw results without emails, tokens or admin controls.
 
+This pass added a compact global footer across the shared app layout, with links to the Privacy Policy and Element Seven, plus plain-English public pages at `/privacy` and `/terms`.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -23,8 +25,8 @@ This pass reordered admin tabs to put Settings & Prizes before Draw & Results, m
 - Mail: `app/Mail/DrawResultsReady.php`, `app/Mail/DrawCancelled.php`, `resources/views/mail/draw-results-ready.blade.php`, `resources/views/mail/draw-cancelled.blade.php`.
 - Controllers and routes for auth, dashboard, sweepstake settings management, joining, tokenised entrant result pages, teams, custom pots, bulk pot assignment, entrants, editable prizes, first draw, reasoned draw re-runs and active draw cancellation.
 - Brand tokens and component classes: `resources/css/app.css`.
-- Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components and lightweight JS for admin tabs, bulk counts, custom pot bulk selection, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
-- Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/SweepstakeAdminTabPersistenceTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeDrawPrizeRequirementTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePotManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
+- Basic Blade views plus a small Vue dashboard stats component, text wordmark component, team-name/copy-button components, public Privacy Policy/Terms pages and lightweight JS for admin tabs, bulk counts, custom pot bulk selection, copy feedback, Manage/Cancel toggles, smooth scroll and confirmation modals.
+- Tests: `tests/Feature/RunRankedPotDrawTest.php`, `tests/Feature/PublicPolicyPagesTest.php`, `tests/Feature/SweepstakeAdminTabPersistenceTest.php`, `tests/Feature/SweepstakeDrawCancellationTest.php`, `tests/Feature/SweepstakeDrawNotificationTest.php`, `tests/Feature/SweepstakeDrawPrizeRequirementTest.php`, `tests/Feature/SweepstakeMemberManagementTest.php`, `tests/Feature/SweepstakePotManagementTest.php`, `tests/Feature/SweepstakePrizeManagementTest.php`, `tests/Feature/SweepstakeSettingsTest.php`, `tests/Feature/SweepstakeTeamManagementTest.php`, `tests/Feature/SweepstakeResultsTest.php`.
 - Flag helper tests: `tests/Unit/TeamFlagTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
 
@@ -70,7 +72,7 @@ For this working tree, Composer dependencies were installed during scaffold crea
 - Browser smoke test at `http://127.0.0.1:8001`: landing page renders, registration form works, dashboard renders and Vue stats mount; current branding is SweepKit.
 - Attempted authenticated browser smoke tests for the admin UI; the in-app Browser loaded the app and the login form, but form submission did not navigate. Authenticated flows are covered by Laravel feature tests.
 
-Current passing test result: 95 tests, 561 assertions.
+Current passing test result: 98 tests, 600 assertions.
 
 Custom pot pass checks:
 
@@ -117,6 +119,17 @@ Prize gate and entrant full-results pass checks:
 - `php artisan route:list` passed and shows 33 routes.
 - `git diff --check` passed.
 - In-app Browser connection dropped during the local smoke check, so a direct local HTTP check was used instead: `curl --max-time 5 -s -o /dev/null -w "%{http_code} %{url_effective}\n" http://127.0.0.1:8001/` returned `200 http://127.0.0.1:8001/`.
+
+Footer and public policy pages pass checks:
+
+- `php artisan test tests/Feature/PublicPolicyPagesTest.php` passed: 3 tests, 39 assertions.
+- `php artisan test` passed: 98 tests, 600 assertions.
+- `composer test` passed: 98 tests, 600 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `php artisan route:list` passed and shows 35 routes, including `/privacy` and `/terms`.
+- `git diff --check` passed.
+- Browser smoke check in the in-app Browser verified `http://127.0.0.1:8001/`, `/privacy` and `/terms` render with the footer, Privacy Policy link and Element Seven link.
 
 ## Known Issues Or Blockers
 
