@@ -22,6 +22,8 @@ This pass added a SweepKit-specific WHM/cPanel deployment runbook at `docs/deplo
 
 This pass added Symfony Mailgun transport support for production email readiness: `symfony/mailgun-mailer`, `symfony/http-client` and the transitive `symfony/http-client-contracts` package are installed, `config/services.php` now reads safe `MAILGUN_*` environment values and docs/placeholders note that real Mailgun DNS/domain/API values still belong only in production `.env`.
 
+This pass replaced the plain text navigation wordmark with the supplied SweepKit SVG logo. The asset lives at `public/images/sweepkit-primary.svg`, and `resources/views/components/wordmark.blade.php` renders it with `alt="SweepKit"` inside the existing home link.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -38,6 +40,7 @@ This pass added Symfony Mailgun transport support for production email readiness
 - Flag helper tests: `tests/Unit/TeamFlagTest.php`.
 - Project notes: `CODEX_CONTEXT.md`, `HANDOFF.md`.
 - Deployment docs: `docs/deployment.md`.
+- Brand assets: `public/images/sweepkit-primary.svg`.
 
 ## Setup Steps
 
@@ -190,6 +193,15 @@ Mailgun transport support pass checks:
 - `./vendor/bin/pint` passed.
 - `php artisan route:list` passed and shows 36 routes.
 - `git diff --check` passed.
+
+Navigation logo pass checks:
+
+- Verified render path: `routes/web.php` routes return Blade views, views extend `resources/views/layouts/app.blade.php`, the header calls `resources/views/components/wordmark.blade.php`, and `resources/js/app.js` only mounts dashboard/helpers.
+- `php artisan test` passed: 99 tests, 620 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `git diff --check` passed.
+- Browser smoke check at `http://127.0.0.1:8001/` confirmed the header logo loads from `/images/sweepkit-primary.svg`, keeps `alt="SweepKit"`, links to home and renders around 119px by 36px without distortion.
 
 ## Known Issues Or Blockers
 
