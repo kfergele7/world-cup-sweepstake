@@ -36,6 +36,8 @@ This pass rebuilt the public homepage into a simple polished SweepKit landing pa
 
 This pass refined the homepage spacing and visual hierarchy to feel calmer and less card-heavy, with larger section rhythm, lighter hero preview treatment, softer feature cards, a blue-tinted fair draw band, an unboxed responsible-use note and a more generous deep-navy final CTA.
 
+This pass refined the homepage design again while keeping the same early-beta landing-page structure: the hero now includes a compact benefit strip, a small "Perfect for" audience strip clarifies target groups, the feature cards have softer accents, the fair-draw section is a stronger branded navy panel and the closing CTA has a clearer final moment.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -261,9 +263,19 @@ Homepage spacing refinement pass checks:
 - `git diff --check` passed.
 - Browser visual checks at desktop and mobile widths confirmed the refined homepage has more breathing room, no horizontal overflow, preserved CTA/footer links and sensible logged-in/logged-out nav.
 
+Homepage design refinement pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/js/app.js` only supplying shared helpers.
+- Files touched: `resources/views/welcome.blade.php` and `HANDOFF.md`.
+- `php artisan test` passed: 100 tests, 640 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- `npm run build` passed.
+- `git diff --check` passed.
+- Browser visual checks at desktop and mobile widths confirmed the benefit strip, "Perfect for" strip, deep-navy fair-draw panel, CTA/footer links, logged-out nav and logged-in nav all render without horizontal overflow at `http://127.0.0.1:8001/`.
+- Local test path: open `http://127.0.0.1:8001/`, check the homepage at desktop and mobile widths, then sign in to confirm the CTA switches from `Create a sweepstake` to `Open dashboard`.
+
 ## Known Issues Or Blockers
 
-- Browser-level authenticated admin verification is limited in the current Codex thread because the in-app Browser did not submit the login form, though public page smoke testing works and authenticated admin flows are covered by feature tests.
 - There is no separate PIN entry route yet, although entrant source values still support `pin`.
 - Admin auth is intentionally minimal and does not include password reset/email verification.
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.

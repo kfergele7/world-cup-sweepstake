@@ -25,84 +25,112 @@
             [
                 'title' => 'Private invite links',
                 'body' => 'Let people join without creating an account. Share one simple link with your group.',
+                'accent' => 'bg-brand-green',
             ],
             [
                 'title' => 'Manual entrant management',
                 'body' => 'Add people yourself, update their details and keep the organiser in control.',
+                'accent' => 'bg-brand-blue',
             ],
             [
                 'title' => 'Paid/unpaid tracking',
                 'body' => 'Track who has paid their entry fee without needing payment processing inside the app.',
+                'accent' => 'bg-brand-navy',
             ],
             [
                 'title' => 'Prize setup',
                 'body' => 'Add your prizes before the draw so everyone knows what the prizes are.',
+                'accent' => 'bg-brand-green',
             ],
             [
                 'title' => 'Auto pots',
                 'body' => 'SweepKit can group teams by ranking to help create a fairer draw.',
+                'accent' => 'bg-brand-blue',
             ],
             [
                 'title' => 'Custom pots',
                 'body' => 'Prefer your own judgement? Build custom pots for favourites, contenders and outsiders.',
+                'accent' => 'bg-brand-navy',
             ],
         ];
+        $audiences = ['Work offices', 'Football chats', 'Golf clubs', 'Friend groups', 'Family sweepstakes'];
     @endphp
 
     <div class="space-y-24 sm:space-y-32">
-        <section class="grid gap-10 py-8 sm:py-12 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-14">
-            <div>
-                <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">SweepKit for private football sweepstakes</p>
-                <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-brand-navy sm:text-5xl">
-                    Run a football sweepstake without the spreadsheet chaos.
-                </h1>
-                <p class="mt-6 max-w-2xl text-lg leading-8 text-brand-muted">
-                    SweepKit helps you create private football sweepstakes, invite entrants, track payments, set prizes and run a fair team draw in minutes.
-                </p>
+        <section class="py-8 sm:py-12">
+            <div class="grid gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-14">
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">SweepKit for private football sweepstakes</p>
+                    <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-brand-navy sm:text-5xl">
+                        Run a football sweepstake without the spreadsheet chaos.
+                    </h1>
+                    <p class="mt-6 max-w-2xl text-lg leading-8 text-brand-muted">
+                        SweepKit helps you create private football sweepstakes, invite entrants, track payments, set prizes and run a fair team draw in minutes.
+                    </p>
 
-                <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <a href="{{ $createSweepstakeUrl }}" class="sk-btn-green inline-flex justify-center px-5 py-3 sm:w-auto">{{ $createSweepstakeLabel }}</a>
-                    @guest
-                        <a href="{{ route('login') }}" class="sk-btn-secondary inline-flex justify-center px-5 py-3 sm:w-auto">Log in</a>
-                    @else
-                        <a href="{{ route('dashboard') }}" class="sk-btn-secondary inline-flex justify-center px-5 py-3 sm:w-auto">Dashboard</a>
-                    @endguest
+                    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                        <a href="{{ $createSweepstakeUrl }}" class="sk-btn-green inline-flex justify-center px-5 py-3 sm:w-auto">{{ $createSweepstakeLabel }}</a>
+                        @guest
+                            <a href="{{ route('login') }}" class="sk-btn-secondary inline-flex justify-center px-5 py-3 sm:w-auto">Log in</a>
+                        @else
+                            <a href="{{ route('dashboard') }}" class="sk-btn-secondary inline-flex justify-center px-5 py-3 sm:w-auto">Dashboard</a>
+                        @endguest
+                    </div>
+
+                    <p class="mt-5 text-sm font-medium text-brand-muted">
+                        Built for private groups, workplaces, clubs and friends.
+                    </p>
+
+                    <div class="mt-6 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-2 rounded-lg border border-brand-border/80 bg-white/80 px-4 py-3 text-sm font-semibold text-brand-navy shadow-sm shadow-brand-navy/5">
+                        <span>No spreadsheets</span>
+                        <span class="text-brand-blue" aria-hidden="true">&middot;</span>
+                        <span>Private invite links</span>
+                        <span class="text-brand-blue" aria-hidden="true">&middot;</span>
+                        <span>Fairer team draws</span>
+                    </div>
                 </div>
 
-                <p class="mt-5 text-sm font-medium text-brand-muted">
-                    Built for private groups, workplaces, clubs and friends.
-                </p>
+                <div class="rounded-lg border border-brand-border/70 bg-white/90 p-5 shadow-sm shadow-brand-navy/5">
+                    <div class="flex flex-wrap items-start justify-between gap-4 border-b border-brand-border pb-5">
+                        <div>
+                            <p class="text-sm font-semibold text-brand-blue">Example setup</p>
+                            <h2 class="mt-2 text-2xl font-black text-brand-navy">Office World Cup sweepstake</h2>
+                        </div>
+                        <span class="sk-badge sk-badge-green">Ready to draw</span>
+                    </div>
+
+                    <div class="mt-6 grid gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                        <div>
+                            <p class="text-sm text-brand-muted">Entrants</p>
+                            <p class="mt-1 text-3xl font-black text-brand-navy">24</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-brand-muted">Teams</p>
+                            <p class="mt-1 text-3xl font-black text-brand-navy">48</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-brand-muted">Prizes</p>
+                            <p class="mt-1 text-3xl font-black text-brand-navy">3</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 rounded-lg border border-brand-blue/10 bg-brand-blue/5 p-4">
+                        <p class="text-sm font-semibold text-brand-navy">Balanced pots</p>
+                        <p class="mt-2 text-sm leading-6 text-brand-muted">
+                            Keep favourites, contenders and outsiders spread more evenly across your group.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div class="rounded-lg border border-brand-border/70 bg-white/85 p-5 shadow-sm shadow-brand-navy/5">
-                <div class="flex flex-wrap items-start justify-between gap-4 border-b border-brand-border pb-5">
-                    <div>
-                        <p class="text-sm font-semibold text-brand-blue">Example setup</p>
-                        <h2 class="mt-2 text-2xl font-black text-brand-navy">Office World Cup sweepstake</h2>
+            <div class="mt-12 rounded-lg border border-brand-border/70 bg-white/70 px-5 py-5 shadow-sm shadow-brand-navy/5 sm:px-6">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <p class="text-sm font-bold uppercase tracking-normal text-brand-blue sm:w-28">Perfect for</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($audiences as $audience)
+                            <span class="rounded-full border border-brand-border bg-white px-3 py-1.5 text-sm font-semibold text-brand-navy">{{ $audience }}</span>
+                        @endforeach
                     </div>
-                    <span class="sk-badge sk-badge-green">Ready to draw</span>
-                </div>
-
-                <div class="mt-6 grid gap-5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                    <div>
-                        <p class="text-sm text-brand-muted">Entrants</p>
-                        <p class="mt-1 text-3xl font-black text-brand-navy">24</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-brand-muted">Teams</p>
-                        <p class="mt-1 text-3xl font-black text-brand-navy">48</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-brand-muted">Prizes</p>
-                        <p class="mt-1 text-3xl font-black text-brand-navy">3</p>
-                    </div>
-                </div>
-
-                <div class="mt-6 rounded-lg border border-brand-blue/10 bg-brand-blue/5 p-4">
-                    <p class="text-sm font-semibold text-brand-navy">Balanced pots</p>
-                    <p class="mt-2 text-sm leading-6 text-brand-muted">
-                        Keep favourites, contenders and outsiders spread more evenly across your group.
-                    </p>
                 </div>
             </div>
         </section>
@@ -132,37 +160,38 @@
 
             <div class="mt-10 grid gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($features as $feature)
-                    <article class="rounded-lg border border-brand-border/70 bg-white/80 p-6 shadow-sm shadow-brand-navy/5">
-                        <h3 class="font-bold text-brand-navy">{{ $feature['title'] }}</h3>
+                    <article class="rounded-lg border border-brand-border/60 bg-white/85 p-6 shadow-sm shadow-brand-navy/[0.03] transition hover:border-brand-blue/20 hover:bg-white">
+                        <span class="{{ $feature['accent'] }} block h-1.5 w-10 rounded-full"></span>
+                        <h3 class="mt-5 font-bold text-brand-navy">{{ $feature['title'] }}</h3>
                         <p class="mt-3 text-sm leading-6 text-brand-muted">{{ $feature['body'] }}</p>
                     </article>
                 @endforeach
             </div>
         </section>
 
-        <section class="rounded-lg border border-brand-blue/10 bg-[#eef7ff] px-5 py-12 sm:px-8 sm:py-16">
+        <section class="overflow-hidden rounded-lg bg-brand-navy px-5 py-12 text-white shadow-sm shadow-brand-navy/20 sm:px-8 sm:py-16">
             <div class="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-12">
-                <div class="rounded-lg bg-white/75 p-5 shadow-sm shadow-brand-navy/5">
+                <div class="rounded-lg border border-white/10 bg-white/10 p-5 shadow-sm shadow-brand-navy/20">
                     <div class="space-y-3">
-                        <div class="rounded-lg border border-brand-border/70 bg-white px-4 py-3">
-                            <p class="text-sm font-bold text-brand-navy">Pot 1 - Favourites</p>
+                        <div class="rounded-lg border border-white/10 bg-white px-4 py-3 text-brand-navy">
+                            <p class="text-sm font-bold">Pot 1 - Favourites</p>
                             <p class="mt-1 text-sm text-brand-muted">Top-ranked teams spread across entrants.</p>
                         </div>
-                        <div class="rounded-lg border border-brand-blue/20 bg-brand-blue/5 px-4 py-3">
-                            <p class="text-sm font-bold text-brand-navy">Pot 2 - Contenders</p>
-                            <p class="mt-1 text-sm text-brand-muted">Strong teams balanced into the draw.</p>
+                        <div class="rounded-lg border border-brand-blue/25 bg-brand-blue/15 px-4 py-3">
+                            <p class="text-sm font-bold text-white">Pot 2 - Contenders</p>
+                            <p class="mt-1 text-sm text-white/70">Strong teams balanced into the draw.</p>
                         </div>
-                        <div class="rounded-lg border border-brand-green/20 bg-green-50 px-4 py-3">
-                            <p class="text-sm font-bold text-brand-navy">Pot 3 - Outsiders</p>
-                            <p class="mt-1 text-sm text-brand-muted">Each entrant gets a balanced mix.</p>
+                        <div class="rounded-lg border border-brand-green/35 bg-brand-green/15 px-4 py-3">
+                            <p class="text-sm font-bold text-white">Pot 3 - Outsiders</p>
+                            <p class="mt-1 text-sm text-white/70">Each entrant gets a balanced mix.</p>
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">Fairer draws</p>
-                    <h2 class="mt-3 text-3xl font-black text-brand-navy">A fairer way to draw teams</h2>
-                    <div class="mt-5 space-y-4 text-base leading-7 text-brand-muted">
+                    <p class="text-sm font-bold uppercase tracking-normal text-brand-green">Fairer draws</p>
+                    <h2 class="mt-3 text-3xl font-black text-white">A fairer way to draw teams</h2>
+                    <div class="mt-5 space-y-4 text-base leading-7 text-white/75">
                         <p>Sweepstakes are more fun when the draw feels balanced.</p>
                         <p>
                             SweepKit can use ranking-based pots so entrants get a fairer spread of teams. If rankings do not match how your group sees the tournament, you can create custom pots and decide how many teams each entrant receives from each pot.
@@ -230,6 +259,7 @@
                     <p class="mt-4 text-base leading-7 text-white/75">
                         Create your sweepstake, invite your group and run a fair football draw in minutes.
                     </p>
+                    <p class="mt-3 text-sm font-medium text-white/60">Set up your first sweepstake in minutes.</p>
                 </div>
 
                 <a href="{{ $createSweepstakeUrl }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-brand-green px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-green/20 transition hover:bg-[#119640]">
