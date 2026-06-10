@@ -40,6 +40,8 @@ This pass refined the homepage design again while keeping the same early-beta la
 
 This pass tightened the homepage section polish before launch: the audience strip is now a compact deep-navy "Made for private group draws" brand moment, all feature-card accents use the same green treatment, the old internal "Private beta" section was replaced with a more useful private-group checklist and the final CTA now has balanced spacing before the footer.
 
+This pass added a final subtle homepage background polish: the hero CTA reassurance line has more breathing room, the group-draw strip now includes Social clubs and Fundraising groups, and the homepage wrapper has a low-opacity animated radial background with a reduced-motion opt-out.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -287,6 +289,18 @@ Homepage section polish pass checks:
 - Browser visual checks at desktop and mobile widths confirmed the new group-draw strip, consistent green feature accents, private-group checklist, footer links and final CTA/footer spacing render without horizontal overflow in the logged-out state.
 - Logged-in homepage behaviour remains covered by the auth-aware Blade route logic and feature tests; an authenticated browser check was attempted, but the local browser automation wrapper could not type into the login form in this pass.
 - Local test path: open `http://127.0.0.1:8001/`, check the homepage at desktop and mobile widths, then sign in to confirm the CTA switches from `Create a sweepstake` to `Open dashboard`.
+
+Homepage background polish pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/js/app.js` only supplying shared helpers.
+- Files touched: `resources/views/welcome.blade.php`, `tests/Feature/PublicPolicyPagesTest.php` and `HANDOFF.md`.
+- `npm run build` passed.
+- `git diff --check` passed.
+- `php artisan test` passed: 100 tests, 644 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser visual checks at desktop and mobile widths confirmed the hero CTA/supporting-line spacing, Social clubs and Fundraising groups pills, audience wrapping, footer spacing, no horizontal overflow and the subtle homepage background treatment at `http://127.0.0.1:8001/`.
+- Browser CSS inspection confirmed the homepage reduced-motion media rule is present and disables the background animation for `prefers-reduced-motion: reduce`.
+- Local test path: open `http://127.0.0.1:8001/`, check the hero CTA spacing, the group-draw strip wrapping, the subtle background treatment and footer spacing at desktop and mobile widths.
 
 ## Known Issues Or Blockers
 

@@ -1,6 +1,60 @@
 @extends('layouts.app')
 
 @section('content')
+    <style>
+        .sk-home-polish {
+            background:
+                radial-gradient(circle at 8% 2%, rgba(22, 135, 232, 0.08), transparent 26rem),
+                radial-gradient(circle at 94% 16%, rgba(22, 184, 78, 0.08), transparent 24rem),
+                radial-gradient(circle at 42% 68%, rgba(6, 21, 45, 0.04), transparent 30rem);
+        }
+
+        .sk-home-polish::before {
+            position: absolute;
+            inset: -8rem -5rem;
+            z-index: 0;
+            pointer-events: none;
+            content: '';
+            background:
+                radial-gradient(circle at 18% 18%, rgba(22, 184, 78, 0.10), transparent 18rem),
+                radial-gradient(circle at 82% 30%, rgba(22, 135, 232, 0.10), transparent 20rem),
+                radial-gradient(circle at 48% 86%, rgba(6, 21, 45, 0.06), transparent 22rem);
+            filter: blur(2px);
+            opacity: 0.72;
+            animation: sk-home-gradient-drift 28s ease-in-out infinite alternate;
+        }
+
+        .sk-home-polish::after {
+            position: absolute;
+            top: 17rem;
+            right: -4rem;
+            z-index: 0;
+            width: min(28rem, 80vw);
+            aspect-ratio: 1;
+            pointer-events: none;
+            content: '';
+            background: rgba(6, 21, 45, 0.045);
+            clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
+            opacity: 0.55;
+        }
+
+        @keyframes sk-home-gradient-drift {
+            from {
+                transform: translate3d(-1rem, -0.5rem, 0) scale(1);
+            }
+
+            to {
+                transform: translate3d(1.5rem, 1rem, 0) scale(1.04);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .sk-home-polish::before {
+                animation: none;
+            }
+        }
+    </style>
+
     @php
         $createSweepstakeUrl = auth()->check() ? route('dashboard') : route('register');
         $createSweepstakeLabel = auth()->check() ? 'Open dashboard' : 'Create a sweepstake';
@@ -47,7 +101,7 @@
                 'body' => 'Prefer your own judgement? Build custom pots for favourites, contenders and outsiders.',
             ],
         ];
-        $audiences = ['Work offices', 'Football chats', 'Golf clubs', 'Friend groups', 'Family sweepstakes'];
+        $audiences = ['Work offices', 'Football chats', 'Golf clubs', 'Friend groups', 'Family sweepstakes', 'Social clubs', 'Fundraising groups'];
         $groupChecks = [
             'Private links for your group',
             'Entrants do not need accounts',
@@ -58,7 +112,8 @@
         ];
     @endphp
 
-    <div class="space-y-24 sm:space-y-32">
+    <div class="sk-home-polish relative isolate overflow-hidden rounded-[2rem] px-0 py-1">
+        <div class="relative z-10 space-y-24 sm:space-y-32">
         <section class="py-8 sm:py-12">
             <div class="grid gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-14">
                 <div>
@@ -79,7 +134,7 @@
                         @endguest
                     </div>
 
-                    <p class="mt-5 text-sm font-medium text-brand-muted">
+                    <p class="mt-8 text-sm font-medium text-brand-muted sm:mt-10">
                         Built for private groups, workplaces, clubs and friends.
                     </p>
 
@@ -284,5 +339,6 @@
                 </a>
             </div>
         </section>
+        </div>
     </div>
 @endsection
