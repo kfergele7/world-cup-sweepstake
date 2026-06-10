@@ -69,7 +69,7 @@
         @endif
 
         <div class="mt-8" data-tabs data-default-tab="overview" data-active-tab="{{ $activeTab }}">
-            <nav class="flex gap-2 overflow-x-auto rounded-lg border border-brand-border bg-white p-2 text-sm" aria-label="Sweepstake admin sections">
+            <nav class="flex flex-wrap gap-2 rounded-lg border border-brand-border bg-white p-2 text-sm sm:flex-nowrap sm:overflow-x-auto" aria-label="Sweepstake admin sections">
                 @foreach ($tabs as $tabId => $tabLabel)
                     @php
                         $isActiveTab = $activeTab === $tabId;

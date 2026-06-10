@@ -30,6 +30,8 @@ This pass slightly increased the SweepKit navigation logo display size from `h-8
 
 This pass styled the authenticated nav `Sign out` POST button as a subtle destructive action with red text, a thin red border and a light red hover state, without changing logout route, method, CSRF handling or auth behaviour.
 
+This pass improved the sweepstake detail tab navigation on mobile by allowing the tab list to wrap onto multiple rows below the `sm` breakpoint, while keeping the existing single-line overflow behaviour on larger screens.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -229,6 +231,13 @@ Sign-out nav style pass checks:
 - `git diff --check` passed.
 - Browser visual check at `http://127.0.0.1:8001/dashboard` confirmed the authenticated desktop nav shows the red bordered Sign out button aligned with the Dashboard link.
 - Browser visual check at a mobile-width viewport confirmed the logo, Dashboard link and Sign out button stay aligned without wrapping awkwardly.
+
+Mobile sweepstake tabs pass checks:
+
+- Verified render path: `routes/web.php` maps `/sweepstakes/{sweepstake}` to `SweepstakeController@show`, which renders `resources/views/sweepstakes/show.blade.php`; `resources/js/app.js` preserves active-tab behaviour through `data-tabs` and `data-tab-target`.
+- `npm run build` passed.
+- `git diff --check` passed.
+- Browser visual checks at mobile, tablet and desktop widths confirmed the tab labels remain unchanged, active state remains clear and the mobile tabs wrap instead of clipping off-screen.
 
 ## Known Issues Or Blockers
 
