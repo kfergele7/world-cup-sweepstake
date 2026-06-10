@@ -32,6 +32,8 @@ This pass styled the authenticated nav `Sign out` POST button as a subtle destru
 
 This pass improved the sweepstake detail tab navigation on mobile by allowing the tab list to wrap onto multiple rows below the `sm` breakpoint, while keeping the existing single-line overflow behaviour on larger screens.
 
+This pass rebuilt the public homepage into a simple polished SweepKit landing page with hero, how-it-works cards, feature grid, fair draw, results/transparency, private beta/responsible use and final CTA sections. The home-page guest nav now labels the auth links as `Log in` and `Create a sweepstake` while keeping the existing routes.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -238,6 +240,16 @@ Mobile sweepstake tabs pass checks:
 - `npm run build` passed.
 - `git diff --check` passed.
 - Browser visual checks at mobile, tablet and desktop widths confirmed the tab labels remain unchanged, active state remains clear and the mobile tabs wrap instead of clipping off-screen.
+
+Homepage landing page pass checks:
+
+- Verified render path: `routes/web.php` maps `/` to the `welcome` Blade view, `resources/views/welcome.blade.php` extends `resources/views/layouts/app.blade.php`, the shared layout renders the logo/nav/footer, and `resources/js/app.js` only provides general page helpers.
+- Added homepage feature coverage in `tests/Feature/PublicPolicyPagesTest.php`.
+- `php artisan test` passed: 100 tests, 640 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- `npm run build` passed.
+- `git diff --check` passed.
+- Browser visual checks at desktop and mobile widths confirmed the logged-in and logged-out homepages render the seven sections without horizontal overflow, preserve footer links, and keep CTA links pointing to existing `register`, `login` or `dashboard` routes.
 
 ## Known Issues Or Blockers
 

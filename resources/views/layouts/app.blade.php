@@ -10,6 +10,10 @@
         @endif
     </head>
     <body class="sk-shell flex min-h-screen flex-col font-sans">
+        @php
+            $isHomePage = request()->routeIs('home');
+        @endphp
+
         <header class="border-b border-brand-border bg-white/90 backdrop-blur">
             <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
@@ -24,8 +28,8 @@
                             <button class="whitespace-nowrap rounded-full border border-red-200 px-3 py-1.5 font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-200">Sign out</button>
                         </form>
                     @else
-                        <a href="{{ route('login') }}" class="font-semibold text-brand-muted transition hover:text-brand-navy">Sign in</a>
-                        <a href="{{ route('register') }}" class="sk-btn-green px-3 py-2">Create admin account</a>
+                        <a href="{{ route('login') }}" class="font-semibold text-brand-muted transition hover:text-brand-navy">{{ $isHomePage ? 'Log in' : 'Sign in' }}</a>
+                        <a href="{{ route('register') }}" class="sk-btn-green px-3 py-2">{{ $isHomePage ? 'Create a sweepstake' : 'Create admin account' }}</a>
                     @endauth
                 </div>
             </nav>

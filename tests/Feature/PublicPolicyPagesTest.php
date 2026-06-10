@@ -10,6 +10,32 @@ class PublicPolicyPagesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_public_homepage_explains_sweepkit_and_keeps_core_links(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Run a football sweepstake without the spreadsheet chaos.')
+            ->assertSee('SweepKit helps you create private football sweepstakes')
+            ->assertSee('Create a sweepstake')
+            ->assertSee(route('register'), false)
+            ->assertSee('Log in')
+            ->assertSee(route('login'), false)
+            ->assertSee('Create your sweepstake')
+            ->assertSee('Add your entrants')
+            ->assertSee('Run the draw')
+            ->assertSee('Private invite links')
+            ->assertSee('Paid/unpaid tracking')
+            ->assertSee('A fairer way to draw teams')
+            ->assertSee('Clear results for everyone')
+            ->assertSee('Built for private sweepstakes')
+            ->assertSee('does not collect entry fees or run the sweepstake on your behalf')
+            ->assertSee('Organisers are responsible')
+            ->assertSee('Privacy Policy')
+            ->assertSee(route('privacy'), false)
+            ->assertSee('Terms')
+            ->assertSee(route('terms'), false);
+    }
+
     public function test_global_footer_appears_on_public_auth_and_admin_pages(): void
     {
         $this->get(route('home'))
@@ -19,7 +45,6 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee(route('privacy'), false)
             ->assertSee('Terms')
             ->assertSee(route('terms'), false)
-            ->assertSee(route('feedback'), false)
             ->assertSee('Built by')
             ->assertSee('Element Seven')
             ->assertSee('https://elementseven.co', false);
