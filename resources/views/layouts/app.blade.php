@@ -21,7 +21,7 @@
                         <a href="{{ route('dashboard') }}" class="font-semibold text-brand-muted transition hover:text-brand-navy">Dashboard</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button class="font-semibold text-brand-muted transition hover:text-brand-navy">Sign out</button>
+                            <button class="whitespace-nowrap rounded-full border border-red-200 px-3 py-1.5 font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-200">Sign out</button>
                         </form>
                     @else
                         <a href="{{ route('login') }}" class="font-semibold text-brand-muted transition hover:text-brand-navy">Sign in</a>

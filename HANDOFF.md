@@ -28,6 +28,8 @@ This pass removed the small `Fair football sweepstakes` tagline from the shared 
 
 This pass slightly increased the SweepKit navigation logo display size from `h-8 sm:h-9` to `h-9 sm:h-10`, keeping the SVG aspect ratio, alt text and home link unchanged.
 
+This pass styled the authenticated nav `Sign out` POST button as a subtle destructive action with red text, a thin red border and a light red hover state, without changing logout route, method, CSRF handling or auth behaviour.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -219,6 +221,14 @@ Nav logo size refinement pass checks:
 - Confirmed `resources/views/components/wordmark.blade.php` still renders the SweepKit SVG with the same `src`, `alt="SweepKit"` and width-auto aspect ratio.
 - `npm run build` passed.
 - `git diff --check` passed.
+
+Sign-out nav style pass checks:
+
+- Verified the sign-out action remains the existing `POST` form to `route('logout')` with `@csrf` in `resources/views/layouts/app.blade.php`.
+- `npm run build` passed.
+- `git diff --check` passed.
+- Browser visual check at `http://127.0.0.1:8001/dashboard` confirmed the authenticated desktop nav shows the red bordered Sign out button aligned with the Dashboard link.
+- Browser visual check at a mobile-width viewport confirmed the logo, Dashboard link and Sign out button stay aligned without wrapping awkwardly.
 
 ## Known Issues Or Blockers
 
