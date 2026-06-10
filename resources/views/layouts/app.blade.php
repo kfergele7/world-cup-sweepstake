@@ -56,9 +56,11 @@
         <footer class="border-t border-brand-border bg-white/80 text-xs text-brand-muted">
             <div class="mx-auto flex min-h-[30px] max-w-6xl flex-col items-center justify-between gap-1 px-4 py-1.5 sm:flex-row">
                 <p class="flex flex-wrap items-center justify-center gap-2">
-                    <span>&copy; SweepKit</span>
+                    <span>&copy; {{ now()->year }} SweepKit</span>
                     <span aria-hidden="true">&middot;</span>
                     <a href="{{ route('privacy') }}" class="font-medium transition hover:text-brand-navy">Privacy Policy</a>
+                    <span aria-hidden="true">&middot;</span>
+                    <a href="{{ route('terms') }}" class="font-medium transition hover:text-brand-navy">Terms</a>
                 </p>
 
                 <p>

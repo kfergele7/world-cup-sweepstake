@@ -14,6 +14,8 @@ This pass reordered admin tabs to put Settings & Prizes before Draw & Results, m
 
 This pass added a compact global footer across the shared app layout, with links to the Privacy Policy and Element Seven, plus plain-English public pages at `/privacy` and `/terms`.
 
+This pass updated the footer to show the dynamic current year and a Terms link on the left side while keeping the Element Seven credit unchanged.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -130,6 +132,17 @@ Footer and public policy pages pass checks:
 - `php artisan route:list` passed and shows 35 routes, including `/privacy` and `/terms`.
 - `git diff --check` passed.
 - Browser smoke check in the in-app Browser verified `http://127.0.0.1:8001/`, `/privacy` and `/terms` render with the footer, Privacy Policy link and Element Seven link.
+
+Footer year/Terms link pass checks:
+
+- `php artisan test tests/Feature/PublicPolicyPagesTest.php` passed: 3 tests, 43 assertions.
+- `php artisan test` passed: 98 tests, 604 assertions.
+- `composer test` passed: 98 tests, 604 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `php artisan route:list` passed and shows 35 routes.
+- `git diff --check` passed.
+- Browser smoke check in the in-app Browser verified the footer renders `© 2026 SweepKit · Privacy Policy · Terms`, with `/privacy`, `/terms` and `https://elementseven.co` links.
 
 ## Known Issues Or Blockers
 

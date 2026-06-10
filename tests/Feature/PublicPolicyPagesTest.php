@@ -14,17 +14,20 @@ class PublicPolicyPagesTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('&copy; SweepKit', false)
+            ->assertSee('&copy; '.now()->year.' SweepKit', false)
             ->assertSee('Privacy Policy')
             ->assertSee(route('privacy'), false)
+            ->assertSee('Terms')
+            ->assertSee(route('terms'), false)
             ->assertSee('Built by')
             ->assertSee('Element Seven')
             ->assertSee('https://elementseven.co', false);
 
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('&copy; SweepKit', false)
+            ->assertSee('&copy; '.now()->year.' SweepKit', false)
             ->assertSee('Privacy Policy')
+            ->assertSee('Terms')
             ->assertSee('Built by');
 
         $admin = User::create([
@@ -36,8 +39,9 @@ class PublicPolicyPagesTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('&copy; SweepKit', false)
+            ->assertSee('&copy; '.now()->year.' SweepKit', false)
             ->assertSee('Privacy Policy')
+            ->assertSee('Terms')
             ->assertSee('Built by');
     }
 
