@@ -24,6 +24,8 @@ This pass added Symfony Mailgun transport support for production email readiness
 
 This pass replaced the plain text navigation wordmark with the supplied SweepKit SVG logo. The asset lives at `public/images/sweepkit-primary.svg`, and `resources/views/components/wordmark.blade.php` renders it with `alt="SweepKit"` inside the existing home link.
 
+This pass removed the small `Fair football sweepstakes` tagline from the shared navigation/header while keeping the SweepKit SVG logo and home link behaviour unchanged.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -202,6 +204,13 @@ Navigation logo pass checks:
 - `./vendor/bin/pint` passed.
 - `git diff --check` passed.
 - Browser smoke check at `http://127.0.0.1:8001/` confirmed the header logo loads from `/images/sweepkit-primary.svg`, keeps `alt="SweepKit"`, links to home and renders around 119px by 36px without distortion.
+
+Nav tagline removal pass checks:
+
+- Verified render path: `routes/web.php` routes return Blade views, views extend `resources/views/layouts/app.blade.php`, and the header home link renders `resources/views/components/wordmark.blade.php` plus the removed nav-only tagline span.
+- `php artisan test` passed: 99 tests, 620 assertions.
+- `npm run build` passed.
+- `git diff --check` passed.
 
 ## Known Issues Or Blockers
 

@@ -14,7 +14,6 @@
             <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
                     <x-wordmark />
-                    <span class="hidden text-sm font-medium text-brand-muted sm:inline">Fair football sweepstakes</span>
                 </a>
 
                 <div class="flex items-center gap-3 text-sm">
