@@ -25,35 +25,37 @@
             [
                 'title' => 'Private invite links',
                 'body' => 'Let people join without creating an account. Share one simple link with your group.',
-                'accent' => 'bg-brand-green',
             ],
             [
                 'title' => 'Manual entrant management',
                 'body' => 'Add people yourself, update their details and keep the organiser in control.',
-                'accent' => 'bg-brand-blue',
             ],
             [
                 'title' => 'Paid/unpaid tracking',
                 'body' => 'Track who has paid their entry fee without needing payment processing inside the app.',
-                'accent' => 'bg-brand-navy',
             ],
             [
                 'title' => 'Prize setup',
                 'body' => 'Add your prizes before the draw so everyone knows what the prizes are.',
-                'accent' => 'bg-brand-green',
             ],
             [
                 'title' => 'Auto pots',
                 'body' => 'SweepKit can group teams by ranking to help create a fairer draw.',
-                'accent' => 'bg-brand-blue',
             ],
             [
                 'title' => 'Custom pots',
                 'body' => 'Prefer your own judgement? Build custom pots for favourites, contenders and outsiders.',
-                'accent' => 'bg-brand-navy',
             ],
         ];
         $audiences = ['Work offices', 'Football chats', 'Golf clubs', 'Friend groups', 'Family sweepstakes'];
+        $groupChecks = [
+            'Private links for your group',
+            'Entrants do not need accounts',
+            'Manual paid/unpaid tracking',
+            'You control entrants, prizes and draw settings',
+            'No payment processing inside SweepKit',
+            'Designed for offices, clubs, friends and family',
+        ];
     @endphp
 
     <div class="space-y-24 sm:space-y-32">
@@ -123,12 +125,17 @@
                 </div>
             </div>
 
-            <div class="mt-12 rounded-lg border border-brand-border/70 bg-white/70 px-5 py-5 shadow-sm shadow-brand-navy/5 sm:px-6">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <p class="text-sm font-bold uppercase tracking-normal text-brand-blue sm:w-28">Perfect for</p>
+            <div class="mt-12 rounded-lg bg-brand-navy px-5 py-5 text-white shadow-sm shadow-brand-navy/20 sm:px-6">
+                <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="max-w-xl">
+                        <p class="text-sm font-bold uppercase tracking-normal text-brand-green">Made for private group draws</p>
+                        <p class="mt-2 text-sm leading-6 text-white/70">
+                            Simple enough for group chats. Structured enough for office sweepstakes.
+                        </p>
+                    </div>
                     <div class="flex flex-wrap gap-2">
                         @foreach ($audiences as $audience)
-                            <span class="rounded-full border border-brand-border bg-white px-3 py-1.5 text-sm font-semibold text-brand-navy">{{ $audience }}</span>
+                            <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white">{{ $audience }}</span>
                         @endforeach
                     </div>
                 </div>
@@ -161,7 +168,7 @@
             <div class="mt-10 grid gap-x-8 gap-y-7 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($features as $feature)
                     <article class="rounded-lg border border-brand-border/60 bg-white/85 p-6 shadow-sm shadow-brand-navy/[0.03] transition hover:border-brand-blue/20 hover:bg-white">
-                        <span class="{{ $feature['accent'] }} block h-1.5 w-10 rounded-full"></span>
+                        <span class="block h-1.5 w-10 rounded-full bg-brand-green"></span>
                         <h3 class="mt-5 font-bold text-brand-navy">{{ $feature['title'] }}</h3>
                         <p class="mt-3 text-sm leading-6 text-brand-muted">{{ $feature['body'] }}</p>
                     </article>
@@ -236,22 +243,32 @@
             </div>
         </section>
 
-        <section class="border-y border-brand-border/80 py-12 sm:py-16">
+        <section class="rounded-lg border border-brand-border/70 bg-white px-5 py-12 shadow-sm shadow-brand-navy/5 sm:px-8 sm:py-16">
             <div class="max-w-3xl">
-                <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">Private beta</p>
-                <h2 class="mt-3 text-3xl font-black text-brand-navy">Built for private sweepstakes</h2>
-                <div class="mt-5 space-y-4 text-base leading-7 text-brand-muted">
-                    <p>
-                        SweepKit is designed for private groups organising their own sweepstakes. It does not collect entry fees or run the sweepstake on your behalf.
-                    </p>
-                    <p>
-                        Organisers are responsible for making sure their sweepstake follows any local rules, workplace rules and relevant laws.
-                    </p>
-                </div>
+                <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">Built for group draws</p>
+                <h2 class="mt-3 text-3xl font-black text-brand-navy">Built for private group sweepstakes</h2>
+                <p class="mt-5 text-base leading-7 text-brand-muted">
+                    SweepKit gives organisers a simple way to run the draw while keeping the group experience private, clear and under control.
+                </p>
+            </div>
+
+            <div class="mt-8 grid gap-4 md:grid-cols-2">
+                @foreach ($groupChecks as $check)
+                    <div class="flex gap-3 rounded-lg border border-brand-border/60 bg-brand-soft/70 px-4 py-3">
+                        <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-green text-xs font-black text-white" aria-hidden="true">&#10003;</span>
+                        <p class="text-sm font-semibold leading-6 text-brand-navy">{{ $check }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-8 rounded-lg border border-brand-blue/10 bg-brand-blue/5 px-4 py-4">
+                <p class="text-sm leading-6 text-brand-muted">
+                    SweepKit helps organisers manage their own private sweepstakes. Organisers remain responsible for following any local rules, workplace rules and relevant laws.
+                </p>
             </div>
         </section>
 
-        <section class="rounded-lg bg-brand-navy px-6 py-12 text-white shadow-sm shadow-brand-navy/20 sm:px-10 sm:py-14">
+        <section class="mb-16 rounded-lg bg-brand-navy px-6 py-12 text-white shadow-sm shadow-brand-navy/20 sm:mb-24 sm:px-10 sm:py-14">
             <div class="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
                 <div class="max-w-2xl">
                     <p class="text-sm font-semibold text-brand-green">Ready when your group is</p>

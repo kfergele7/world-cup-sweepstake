@@ -38,6 +38,8 @@ This pass refined the homepage spacing and visual hierarchy to feel calmer and l
 
 This pass refined the homepage design again while keeping the same early-beta landing-page structure: the hero now includes a compact benefit strip, a small "Perfect for" audience strip clarifies target groups, the feature cards have softer accents, the fair-draw section is a stronger branded navy panel and the closing CTA has a clearer final moment.
 
+This pass tightened the homepage section polish before launch: the audience strip is now a compact deep-navy "Made for private group draws" brand moment, all feature-card accents use the same green treatment, the old internal "Private beta" section was replaced with a more useful private-group checklist and the final CTA now has balanced spacing before the footer.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -272,6 +274,18 @@ Homepage design refinement pass checks:
 - `npm run build` passed.
 - `git diff --check` passed.
 - Browser visual checks at desktop and mobile widths confirmed the benefit strip, "Perfect for" strip, deep-navy fair-draw panel, CTA/footer links, logged-out nav and logged-in nav all render without horizontal overflow at `http://127.0.0.1:8001/`.
+- Local test path: open `http://127.0.0.1:8001/`, check the homepage at desktop and mobile widths, then sign in to confirm the CTA switches from `Create a sweepstake` to `Open dashboard`.
+
+Homepage section polish pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/js/app.js` only supplying shared helpers.
+- Files touched: `resources/views/welcome.blade.php`, `tests/Feature/PublicPolicyPagesTest.php` and `HANDOFF.md`.
+- `npm run build` passed.
+- `git diff --check` passed.
+- `php artisan test` passed: 100 tests, 642 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser visual checks at desktop and mobile widths confirmed the new group-draw strip, consistent green feature accents, private-group checklist, footer links and final CTA/footer spacing render without horizontal overflow in the logged-out state.
+- Logged-in homepage behaviour remains covered by the auth-aware Blade route logic and feature tests; an authenticated browser check was attempted, but the local browser automation wrapper could not type into the login form in this pass.
 - Local test path: open `http://127.0.0.1:8001/`, check the homepage at desktop and mobile widths, then sign in to confirm the CTA switches from `Create a sweepstake` to `Open dashboard`.
 
 ## Known Issues Or Blockers
