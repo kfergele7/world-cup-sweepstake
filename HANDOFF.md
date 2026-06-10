@@ -20,6 +20,8 @@ This pass prepared SweepKit for a small private beta by adding `/feedback` backe
 
 This pass added a SweepKit-specific WHM/cPanel deployment runbook at `docs/deployment.md`, covering the `/home/sweepkit/laravel` app root, `/home/sweepkit/public_html -> /home/sweepkit/laravel/public` public root pattern, production `.env` placeholders, database setup, permissions, Mailgun DNS, Cloudflare/123-reg notes, route-cache warnings and verification steps.
 
+This pass added Symfony Mailgun transport support for production email readiness: `symfony/mailgun-mailer`, `symfony/http-client` and the transitive `symfony/http-client-contracts` package are installed, `config/services.php` now reads safe `MAILGUN_*` environment values and docs/placeholders note that real Mailgun DNS/domain/API values still belong only in production `.env`.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -174,6 +176,21 @@ WHM/cPanel deployment docs pass checks:
 - `php artisan route:list` passed and shows 36 routes.
 - `git diff --check` passed.
 
+Mailgun transport support pass checks:
+
+- `pwd` confirmed `/Users/kyleferguson/Documents/World Cup Sweepstake`.
+- `git status --short --branch` showed `main...origin/main` with only the Mailgun dependency/config/docs changes plus the pre-existing untracked `extra/` directory.
+- `git pull` reported `Already up to date.`
+- `git log --oneline -5` and `git remote -v` confirmed the current branch history and `git@github.com:kfergele7/world-cup-sweepstake.git`.
+- Read `CODEX_CONTEXT.md`, `HANDOFF.md`, `README.md`, `docs/deployment.md`, `config/mail.php`, `.env.example` and `config/services.php`.
+- `composer require symfony/mailgun-mailer symfony/http-client` installed `symfony/mailgun-mailer` v7.4.0, `symfony/http-client` v7.4.13 and `symfony/http-client-contracts` v3.7.0. Composer selected Symfony 7.4 because Symfony 8.1 requires PHP 8.4.1 and this app targets PHP 8.3.
+- `php artisan test` passed: 99 tests, 620 assertions.
+- `composer test` passed: 99 tests, 620 assertions.
+- `npm run build` passed.
+- `./vendor/bin/pint` passed.
+- `php artisan route:list` passed and shows 36 routes.
+- `git diff --check` passed.
+
 ## Known Issues Or Blockers
 
 - Browser-level authenticated admin verification is limited in the current Codex thread because the in-app Browser did not submit the login form, though public page smoke testing works and authenticated admin flows are covered by feature tests.
@@ -182,7 +199,7 @@ WHM/cPanel deployment docs pass checks:
 - Draw result emails are sent synchronously through Laravel's configured mailer for the MVP.
 - Production email links depend on `APP_URL`; set it to the real HTTPS domain before beta mail is sent.
 - `SUPPORT_EMAIL` is an environment placeholder and must be set to the real beta support inbox before testers use the feedback page.
-- Production Mailgun sending requires the appropriate Symfony Mailgun transport packages or a different configured mailer; the current `composer.json` does not yet include those Mailgun packages.
+- Production Mailgun sending is dependency-ready, but real Mailgun DNS records, domain, API secret and endpoint still need configuring on the production server. No Mailgun secrets are committed.
 - Do not run `php artisan route:cache` until the closure route in `routes/web.php` is refactored and route caching is tested.
 - Team seed rankings are a working April 2026 dataset and should be refreshed from FIFA before production launch.
 - SweepKit does not process payments. Entry fees, prize values and paid/unpaid status are organiser-managed tracking fields only.

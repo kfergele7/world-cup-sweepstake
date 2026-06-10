@@ -52,6 +52,7 @@ Before using SweepKit outside local development:
 - Set `APP_DEBUG=false`.
 - Set `APP_URL` to the real HTTPS domain. Email links use this value.
 - Configure `MAIL_MAILER`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` and related mail settings for production.
+- Mailgun transport packages are installed; keep real Mailgun domain, endpoint and API secret in the production `.env` only.
 - Set `SUPPORT_EMAIL` to the support or feedback inbox shown on `/feedback`.
 - Use a production database, not the local SQLite file.
 - Run `php artisan migrate --force`.

@@ -153,7 +153,7 @@ Important notes:
 - `SESSION_SECURE_COOKIE=true` should be enabled once HTTPS is active.
 - If cPanel provides a database host or port other than `localhost:3306`, use the cPanel value.
 - If the Mailgun account is not EU-region, use the correct Mailgun endpoint for that account.
-- The current codebase does not include Symfony's Mailgun transport packages. Before setting `MAIL_MAILER=mailgun`, install and commit the required packages, usually `symfony/mailgun-mailer` and `symfony/http-client`, or choose another configured Laravel mailer.
+- SweepKit includes the Symfony Mailgun transport packages required for Laravel's `MAIL_MAILER=mailgun` configuration. Set the real Mailgun domain, secret and endpoint only in the production `.env` file.
 
 Generate the app key on the server if it has not already been created:
 
@@ -280,7 +280,7 @@ dig MX mg.sweepkit.co.uk +short
 dig TXT _dmarc.mg.sweepkit.co.uk +short
 ```
 
-Once Mailgun is verified and the required Laravel Mailgun transport packages are installed, set:
+Once Mailgun is verified, set:
 
 ```dotenv
 MAIL_MAILER=mailgun

@@ -102,7 +102,7 @@ The master team seed lives in `Database\Seeders\TeamSeeder`. It contains a worki
 - Public entrant result pages must use `join_token`, not incremental entrant IDs. After an active draw they show the entrant's own teams first, then the full active draw results by entrant name and team, without exposing emails, tokens or admin-only controls.
 - Entrants can be removed before a draw or after cancelling/reopening setup. There is not yet a self-service sweepstake delete flow; site-owner data removal should be handled manually until a tested destructive flow exists.
 - Team ranking data is seeded and must be reviewed before wider launch or user-facing claims of current accuracy.
-- WHM/cPanel deployment notes live in `docs/deployment.md`. Production should serve `/home/sweepkit/laravel/public` via `/home/sweepkit/public_html`, never the Laravel root. Do not enable `php artisan route:cache` until the closure route in `routes/web.php` has been refactored and route caching has been tested. Mailgun production sending requires the appropriate Symfony Mailgun transport packages or a different configured Laravel mailer.
+- WHM/cPanel deployment notes live in `docs/deployment.md`. Production should serve `/home/sweepkit/laravel/public` via `/home/sweepkit/public_html`, never the Laravel root. Do not enable `php artisan route:cache` until the closure route in `routes/web.php` has been refactored and route caching has been tested. Mailgun production sending is dependency-ready through Symfony's Mailgun transport packages, but real Mailgun DNS/domain/API values must only be configured on the production server.
 
 ## Admin Journey
 
