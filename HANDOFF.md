@@ -26,6 +26,8 @@ This pass replaced the plain text navigation wordmark with the supplied SweepKit
 
 This pass removed the small `Fair football sweepstakes` tagline from the shared navigation/header while keeping the SweepKit SVG logo and home link behaviour unchanged.
 
+This pass slightly increased the SweepKit navigation logo display size from `h-8 sm:h-9` to `h-9 sm:h-10`, keeping the SVG aspect ratio, alt text and home link unchanged.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -209,6 +211,12 @@ Nav tagline removal pass checks:
 
 - Verified render path: `routes/web.php` routes return Blade views, views extend `resources/views/layouts/app.blade.php`, and the header home link renders `resources/views/components/wordmark.blade.php` plus the removed nav-only tagline span.
 - `php artisan test` passed: 99 tests, 620 assertions.
+- `npm run build` passed.
+- `git diff --check` passed.
+
+Nav logo size refinement pass checks:
+
+- Confirmed `resources/views/components/wordmark.blade.php` still renders the SweepKit SVG with the same `src`, `alt="SweepKit"` and width-auto aspect ratio.
 - `npm run build` passed.
 - `git diff --check` passed.
 
