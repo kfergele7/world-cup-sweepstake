@@ -29,7 +29,7 @@
                         </form>
                     @else
                         <a href="{{ route('login') }}" class="font-semibold text-brand-muted transition hover:text-brand-navy">{{ $isHomePage ? 'Log in' : 'Sign in' }}</a>
-                        <a href="{{ route('register') }}" class="sk-btn-green px-3 py-2">{{ $isHomePage ? 'Create a sweepstake' : 'Create admin account' }}</a>
+                        <a href="{{ route('register') }}" class="sk-btn-green px-3 py-2">{{ $isHomePage ? 'Create a sweepstake' : 'Create organiser account' }}</a>
                     @endauth
                 </div>
             </nav>

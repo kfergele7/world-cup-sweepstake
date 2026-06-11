@@ -76,14 +76,22 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee('Built by');
     }
 
-    public function test_register_page_links_existing_users_to_sign_in(): void
+    public function test_auth_pages_link_between_register_and_login_with_organiser_wording(): void
     {
         $this->get(route('register'))
             ->assertOk()
-            ->assertSee('Create admin account')
+            ->assertSee('Create organiser account')
+            ->assertDontSee('Create admin account')
             ->assertSee('Already have an account?')
             ->assertSee('Sign in here.')
             ->assertSee(route('login'), false);
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Sign in')
+            ->assertSee('Don&rsquo;t have an organiser account?', false)
+            ->assertSee('Create one here.')
+            ->assertSee(route('register'), false);
     }
 
     public function test_privacy_policy_page_explains_project_data_use(): void

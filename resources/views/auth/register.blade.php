@@ -3,7 +3,7 @@
 @section('content')
     <section class="max-w-md">
         <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">SweepKit</p>
-        <h1 class="mt-2 text-2xl font-black text-brand-navy">Create admin account</h1>
+        <h1 class="mt-2 text-2xl font-black text-brand-navy">Create organiser account</h1>
 
         <form method="POST" action="{{ route('register') }}" class="sk-card mt-6 space-y-4 p-5">
             @csrf

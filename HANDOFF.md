@@ -52,6 +52,8 @@ This pass increased the homepage hexagon JPG layer opacity from `0.07` to `0.4` 
 
 This pass added an existing-user prompt below the create-account form: `Already have an account? Sign in here.`, linking to the named `login` route without changing registration or login behaviour.
 
+This pass polished auth-page copy: the register flow now uses public-facing `organiser` wording instead of `admin`, and the login page now links new users to the register route with `Don't have an organiser account? Create one here.` No auth routes, validation or behaviour changed.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -234,6 +236,13 @@ Register page sign-in prompt pass checks:
 - `npm run build` passed.
 - `php artisan test` passed: 101 tests, 650 assertions.
 - Browser render audit at `http://127.0.0.1:8001/register` confirmed the new existing-account prompt appears on desktop and mobile, has no horizontal overflow at 1280px or 390px widths and links to `/login`.
+
+Auth organiser wording pass checks:
+
+- `npm run build` passed.
+- `php artisan test` passed after rerun: 101 tests, 656 assertions. The first parallel run overlapped with `npm run build` and hit a transient Vite font manifest/file race while `public/build` was being rewritten.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser render audit at `http://127.0.0.1:8001/register` and `/login` confirmed organiser wording, reciprocal auth links, no horizontal overflow at 1280px or 390px widths and correct link targets.
 
 Navigation logo pass checks:
 

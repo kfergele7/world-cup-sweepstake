@@ -25,5 +25,12 @@
 
             <button class="sk-btn-green">Sign in</button>
         </form>
+
+        <p class="mt-4 text-center text-sm text-brand-muted">
+            Don&rsquo;t have an organiser account?
+            <a href="{{ route('register') }}" class="font-semibold text-brand-blue transition hover:text-brand-navy">
+                Create one here.
+            </a>
+        </p>
     </section>
 @endsection
