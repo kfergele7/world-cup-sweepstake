@@ -58,6 +58,8 @@ This pass clarified the sweepstake detail header share controls: the old `Join c
 
 This pass updated the public support contact fallback from `hello@example.com` to `kyle@elementseven.co`, so `/feedback` and the Privacy Policy support mailto link show the real beta contact address when `SUPPORT_EMAIL` is not otherwise set.
 
+This pass fixed the failed server `php artisan migrate:fresh --seed` run in `2026_06_07_000007_create_sweepstake_draws_and_version_assignments.php`. MySQL was using the original `team_assignments_sweepstake_member_id_team_id_unique` key to support the `sweepstake_member_id` foreign key, so dropping that unique key failed with error 1553. The migration now adds an explicit `team_assignments_sweepstake_member_id_index` before dropping the old unique key, and removes that helper index again in `down()` after restoring the original unique key.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -388,6 +390,13 @@ Homepage hexagon background asset pass checks:
 - Browser visual/CSS checks at desktop and mobile widths confirmed the homepage uses the real JPG texture, no recreated SVG hex background remains, green is absent from the background gradient, the hex texture is fixed/static at low opacity, the blue/grey gradient overlay animates slowly at 120s and reduced-motion disables that animation.
 - Browser checks confirmed nav/logo links remain visible and clickable, no horizontal overflow is introduced, hero text remains readable, Fundraising groups is absent and dashboard/auth pages do not include the homepage background class.
 - Local test path: open `http://127.0.0.1:8001/`, check the faint selected hex texture placements, readable hero, slow blue/grey background movement, compact audience strip and nav clickability at desktop and mobile widths.
+
+Team assignment migration index fix checks:
+
+- Reproduced the relevant migration path by running `php artisan migrate:fresh --seed`; it completed successfully after adding the explicit `sweepstake_member_id` support index before dropping the old unique key.
+- `php artisan test` passed: 101 tests, 665 assertions.
+- `git diff --check` passed.
+- Server retry notes: after pulling this commit, run `php artisan optimize:clear` before retrying `php artisan migrate:fresh --seed --force` on the pre-launch server database. This destructive retry is only acceptable because the database has already been intentionally wiped before launch; once live users exist, do not use `migrate:fresh`.
 
 ## Known Issues Or Blockers
 

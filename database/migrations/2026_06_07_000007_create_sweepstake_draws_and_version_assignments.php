@@ -29,8 +29,12 @@ return new class extends Migration
         });
 
         Schema::table('team_assignments', function (Blueprint $table) {
+            $table->index('sweepstake_member_id', 'team_assignments_sweepstake_member_id_index');
+        });
+
+        Schema::table('team_assignments', function (Blueprint $table) {
             $table->dropUnique(['sweepstake_id', 'team_id']);
-            $table->dropUnique(['sweepstake_member_id', 'team_id']);
+            $table->dropUnique('team_assignments_sweepstake_member_id_team_id_unique');
         });
 
         Schema::table('team_assignments', function (Blueprint $table) {
@@ -88,6 +92,10 @@ return new class extends Migration
         Schema::table('team_assignments', function (Blueprint $table) {
             $table->unique(['sweepstake_id', 'team_id']);
             $table->unique(['sweepstake_member_id', 'team_id']);
+        });
+
+        Schema::table('team_assignments', function (Blueprint $table) {
+            $table->dropIndex('team_assignments_sweepstake_member_id_index');
         });
 
         Schema::dropIfExists('sweepstake_draws');
