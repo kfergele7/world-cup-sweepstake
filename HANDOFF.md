@@ -44,6 +44,8 @@ This pass added a final subtle homepage background polish: the hero CTA reassura
 
 This pass corrected the homepage background treatment: the inline Blade background styles were moved into `resources/css/app.css`, the homepage now uses a pale layered gradient with a very faint inline SVG hexagon texture, the audience strip has eight groups in a controlled 4x2 desktop grid and 2-column mobile grid, and the hero CTA spacing remains relaxed.
 
+This pass fixed the latest homepage polish issues: the homepage background is now a body-level fixed layer behind the header/main/footer, nav links remain visible and clickable above it, background movement was slowed to 120 seconds, and the audience strip is back to a compact left-copy/right-pills layout with Fundraising groups removed.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -298,7 +300,7 @@ Homepage background polish pass checks:
 - Files touched: `resources/views/welcome.blade.php`, `tests/Feature/PublicPolicyPagesTest.php` and `HANDOFF.md`.
 - `npm run build` passed.
 - `git diff --check` passed.
-- `php artisan test` passed: 100 tests, 644 assertions.
+- `php artisan test` passed: 100 tests, 645 assertions.
 - `php artisan route:list` passed and shows 36 routes.
 - Browser visual checks at desktop and mobile widths confirmed the hero CTA/supporting-line spacing, Social clubs and Fundraising groups pills, audience wrapping, footer spacing, no horizontal overflow and the subtle homepage background treatment at `http://127.0.0.1:8001/`.
 - Browser CSS inspection confirmed the homepage reduced-motion media rule is present and disables the background animation for `prefers-reduced-motion: reduce`.
@@ -315,6 +317,20 @@ Homepage background correction pass checks:
 - Browser visual checks at desktop and mobile widths confirmed the CSS-owned SVG hex texture and radial gradient background, no horizontal overflow, readable cards/text, balanced footer spacing and the audience strip rendering as 4 columns x 2 rows on desktop and 2 columns on mobile.
 - Browser CSS inspection confirmed the reduced-motion media rule is present and disables the homepage background animation for `prefers-reduced-motion: reduce`.
 - Local test path: open `http://127.0.0.1:8001/`, check the full homepage background from hero to footer, the balanced audience strip and the footer spacing at desktop and mobile widths.
+
+Homepage background and nav layering fix pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/css/app.css` and `resources/js/app.js` loaded by Vite.
+- Files touched: `resources/views/welcome.blade.php`, `resources/css/app.css`, `tests/Feature/PublicPolicyPagesTest.php` and `HANDOFF.md`.
+- `npm run build` passed.
+- `git diff --check` passed.
+- `php artisan test` passed: 100 tests, 644 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser visual/CSS checks at desktop and mobile widths confirmed the homepage nav/logo is visible, logged-out nav links are clickable above the background layer, the background layer is fixed and viewport-wide, reduced-motion disables animation, there is no horizontal overflow, footer spacing stays balanced and the audience strip no longer includes Fundraising groups.
+- Browser checks confirmed the audience strip renders as a compact 4-column pill group on desktop and a deliberate 2-column grid on mobile.
+- Browser checks confirmed dashboard/auth pages do not include the `homepage-gradient-bg` class.
+- Attempted authenticated browser login to verify the `Dashboard` / red `Sign out` nav state visually, but the in-app browser wrapper could not type into the login form in this pass. The authenticated nav markup/auth behaviour was not changed and remains covered by the existing tests.
+- Local test path: open `http://127.0.0.1:8001/`, check the full-width slow-moving background, visible/clickable nav, audience strip and footer spacing at desktop and mobile widths; then open `http://127.0.0.1:8001/dashboard` or `/login` to confirm the homepage background is not applied.
 
 ## Known Issues Or Blockers
 

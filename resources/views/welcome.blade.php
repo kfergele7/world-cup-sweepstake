@@ -47,7 +47,7 @@
                 'body' => 'Prefer your own judgement? Build custom pots for favourites, contenders and outsiders.',
             ],
         ];
-        $audiences = ['Work offices', 'Football chats', 'Golf clubs', 'Friend groups', 'Family sweepstakes', 'Social clubs', 'Fundraising groups', 'Sports clubs'];
+        $audiences = ['Work offices', 'Football chats', 'Golf clubs', 'Friend groups', 'Family sweepstakes', 'Social clubs', 'Sports clubs'];
         $groupChecks = [
             'Private links for your group',
             'Entrants do not need accounts',
@@ -58,7 +58,7 @@
         ];
     @endphp
 
-    <div class="homepage-gradient-bg relative isolate overflow-hidden rounded-[2rem] px-0 py-1">
+    <div class="homepage-gradient-bg relative isolate px-0 py-1">
         <div class="relative z-10 space-y-24 sm:space-y-32">
         <section class="py-8 sm:py-12">
             <div class="grid gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:gap-14">
@@ -127,16 +127,16 @@
             </div>
 
             <div class="mt-12 rounded-lg bg-brand-navy px-5 py-5 text-white shadow-sm shadow-brand-navy/20 sm:px-6">
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="max-w-xl">
+                <div class="grid gap-5 lg:grid-cols-[minmax(0,21rem)_1fr] lg:items-center">
+                    <div>
                         <p class="text-sm font-bold uppercase tracking-normal text-brand-green">Made for private group draws</p>
-                        <p class="mt-2 text-sm leading-6 text-white/70">
-                            Simple enough for group chats. Structured enough for office sweepstakes.
+                        <p class="mt-2 text-sm leading-6 text-white/70 lg:max-w-xs">
+                            Simple for group chats. Structured for office sweepstakes.
                         </p>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[31rem]">
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         @foreach ($audiences as $audience)
-                            <span class="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-center text-sm font-semibold text-white">{{ $audience }}</span>
+                            <span class="rounded-full border border-white/10 bg-white/10 px-2.5 py-1.5 text-center text-xs font-semibold text-white sm:text-sm">{{ $audience }}</span>
                         @endforeach
                     </div>
                 </div>
