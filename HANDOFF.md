@@ -48,6 +48,8 @@ This pass fixed the latest homepage polish issues: the homepage background is no
 
 This pass corrected the homepage hexagon background implementation: the supplied JPG is now a Vite-managed project asset at `resources/images/homepage-hexagons.jpg`, CSS/SVG-recreated hexagons were removed, green was removed from the background gradient, the JPG texture is static and very low opacity in selected faded placements, and the slow moving overlay uses only blue, grey, white and faint navy tones.
 
+This pass increased the homepage hexagon JPG layer opacity from `0.07` to `0.4` in `body:has(.homepage-gradient-bg)::before`, matching the tested visual direction while keeping the gradient overlay, fixed full-viewport layer and reduced-motion handling intact.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -217,6 +219,13 @@ Mailgun transport support pass checks:
 - `./vendor/bin/pint` passed.
 - `php artisan route:list` passed and shows 36 routes.
 - `git diff --check` passed.
+
+Homepage hexagon opacity pass checks:
+
+- `npm run build` passed and built the Vite-managed homepage hexagon JPG asset.
+- `git diff --check` passed.
+- `php artisan test tests/Feature/PublicPolicyPagesTest.php` passed: 5 tests, 81 assertions.
+- Browser render audit at `http://127.0.0.1:8001/` confirmed the hexagon layer uses the JPG asset at `opacity: 0.4`, sits fixed behind the page, has no horizontal overflow at 1280px or 390px widths, keeps nav links clickable and preserves reduced-motion animation disabling.
 
 Navigation logo pass checks:
 
