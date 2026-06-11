@@ -54,6 +54,8 @@ This pass added an existing-user prompt below the create-account form: `Already 
 
 This pass polished auth-page copy: the register flow now uses public-facing `organiser` wording instead of `admin`, and the login page now links new users to the register route with `Don't have an organiser account? Create one here.` No auth routes, validation or behaviour changed.
 
+This pass clarified the sweepstake detail header share controls: the old `Join code` pill was replaced with a compact `Share this link with entrants` join-link panel, the full join URL is displayed with truncation, `Copy link` still uses the existing copy helper and `Open join page` is now `Preview join page`.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -243,6 +245,13 @@ Auth organiser wording pass checks:
 - `php artisan test` passed after rerun: 101 tests, 656 assertions. The first parallel run overlapped with `npm run build` and hit a transient Vite font manifest/file race while `public/build` was being rewritten.
 - `php artisan route:list` passed and shows 36 routes.
 - Browser render audit at `http://127.0.0.1:8001/register` and `/login` confirmed organiser wording, reciprocal auth links, no horizontal overflow at 1280px or 390px widths and correct link targets.
+
+Sweepstake join-link controls pass checks:
+
+- `npm run build` passed.
+- `php artisan test` passed: 101 tests, 662 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser render audit at `http://127.0.0.1:8001/sweepstakes/10` confirmed the new share label, full join URL display, `Copy link` value, `Preview join page` target, no header `Join code`/`Open join page` wording and no horizontal overflow at 1280px or 390px widths. The in-app Browser does not expose a virtual clipboard, so direct clipboard-content reading was unavailable; the rendered `data-copy-value` and existing copy helper wiring were verified.
 
 Navigation logo pass checks:
 

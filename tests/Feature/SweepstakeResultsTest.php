@@ -65,6 +65,12 @@ class SweepstakeResultsTest extends TestCase
         $this->actingAs($admin)
             ->get(route('sweepstakes.show', $sweepstake))
             ->assertOk()
+            ->assertSee('Share this link with entrants')
+            ->assertSee(route('join.show', $sweepstake->join_code), false)
+            ->assertSee('Copy link')
+            ->assertSee('Preview join page')
+            ->assertDontSee('Join code '.$sweepstake->join_code)
+            ->assertDontSee('Open join page')
             ->assertSee('The draw has not been run yet.')
             ->assertSee('Add at least one prize before running the draw.')
             ->assertDontSee('Alice Adams has 1 team');

@@ -21,6 +21,7 @@
         ];
         $requestedTab = old('tab', request('tab', session('active_tab', 'overview')));
         $activeTab = array_key_exists($requestedTab, $tabs) ? $requestedTab : 'overview';
+        $joinUrl = route('join.show', $sweepstake->join_code);
         $nextStep = match (true) {
             $memberCount < 2 => 'Add at least two entrants before running the draw.',
             $isCustomPotMode && $sweepstake->pots->isEmpty() => 'Create custom pots, then assign teams to them.',
@@ -33,16 +34,24 @@
 
     <section>
         <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
+            <div class="min-w-0 flex-1">
                 <p class="text-sm font-bold uppercase tracking-normal text-brand-blue">{{ ucfirst($sweepstake->status) }}</p>
                 <h1 class="mt-2 text-3xl font-black text-brand-navy">{{ $sweepstake->name }}</h1>
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                    <span class="sk-badge sk-badge-blue">Join code {{ $sweepstake->join_code }}</span>
-                    <a class="sk-btn-pill" href="{{ route('join.show', $sweepstake->join_code) }}">Open join page</a>
-                    <x-copy-button
-                        :value="route('join.show', $sweepstake->join_code)"
-                        label="Copy public join link"
-                    />
+                <div class="mt-4 rounded-lg border border-brand-border bg-white/85 p-3 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-normal text-brand-blue">Share this link with entrants</p>
+                    <div class="mt-2 flex flex-col gap-3 lg:flex-row lg:items-center">
+                        <p class="min-w-0 flex-1 rounded-lg border border-brand-border bg-brand-soft px-3 py-2 font-mono text-xs text-brand-muted">
+                            <span class="block truncate">{{ $joinUrl }}</span>
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <x-copy-button
+                                :value="$joinUrl"
+                                label="Copy join link"
+                            />
+                            <a class="sk-btn-pill" href="{{ $joinUrl }}">Preview join page</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
