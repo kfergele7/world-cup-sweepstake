@@ -46,6 +46,8 @@ This pass corrected the homepage background treatment: the inline Blade backgrou
 
 This pass fixed the latest homepage polish issues: the homepage background is now a body-level fixed layer behind the header/main/footer, nav links remain visible and clickable above it, background movement was slowed to 120 seconds, and the audience strip is back to a compact left-copy/right-pills layout with Fundraising groups removed.
 
+This pass corrected the homepage hexagon background implementation: the supplied JPG is now a Vite-managed project asset at `resources/images/homepage-hexagons.jpg`, CSS/SVG-recreated hexagons were removed, green was removed from the background gradient, the JPG texture is static and very low opacity in selected faded placements, and the slow moving overlay uses only blue, grey, white and faint navy tones.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -331,6 +333,18 @@ Homepage background and nav layering fix pass checks:
 - Browser checks confirmed dashboard/auth pages do not include the `homepage-gradient-bg` class.
 - Attempted authenticated browser login to verify the `Dashboard` / red `Sign out` nav state visually, but the in-app browser wrapper could not type into the login form in this pass. The authenticated nav markup/auth behaviour was not changed and remains covered by the existing tests.
 - Local test path: open `http://127.0.0.1:8001/`, check the full-width slow-moving background, visible/clickable nav, audience strip and footer spacing at desktop and mobile widths; then open `http://127.0.0.1:8001/dashboard` or `/login` to confirm the homepage background is not applied.
+
+Homepage hexagon background asset pass checks:
+
+- Verified render path stayed `routes/web.php` `/` closure to `resources/views/welcome.blade.php`, extending `resources/views/layouts/app.blade.php`, with `resources/css/app.css` and `resources/js/app.js` loaded by Vite.
+- Files touched: `resources/css/app.css`, `resources/images/homepage-hexagons.jpg` and `HANDOFF.md`.
+- `npm run build` passed and fingerprinted the homepage hexagon JPG through Vite.
+- `git diff --check` passed.
+- `php artisan test` passed: 100 tests, 645 assertions.
+- `php artisan route:list` passed and shows 36 routes.
+- Browser visual/CSS checks at desktop and mobile widths confirmed the homepage uses the real JPG texture, no recreated SVG hex background remains, green is absent from the background gradient, the hex texture is fixed/static at low opacity, the blue/grey gradient overlay animates slowly at 120s and reduced-motion disables that animation.
+- Browser checks confirmed nav/logo links remain visible and clickable, no horizontal overflow is introduced, hero text remains readable, Fundraising groups is absent and dashboard/auth pages do not include the homepage background class.
+- Local test path: open `http://127.0.0.1:8001/`, check the faint selected hex texture placements, readable hero, slow blue/grey background movement, compact audience strip and nav clickability at desktop and mobile widths.
 
 ## Known Issues Or Blockers
 
