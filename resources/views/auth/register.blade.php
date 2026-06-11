@@ -30,5 +30,12 @@
 
             <button class="sk-btn-green">Create account</button>
         </form>
+
+        <p class="mt-4 text-center text-sm text-brand-muted">
+            Already have an account?
+            <a href="{{ route('login') }}" class="font-semibold text-brand-blue transition hover:text-brand-navy">
+                Sign in here.
+            </a>
+        </p>
     </section>
 @endsection

@@ -76,6 +76,16 @@ class PublicPolicyPagesTest extends TestCase
             ->assertSee('Built by');
     }
 
+    public function test_register_page_links_existing_users_to_sign_in(): void
+    {
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('Create admin account')
+            ->assertSee('Already have an account?')
+            ->assertSee('Sign in here.')
+            ->assertSee(route('login'), false);
+    }
+
     public function test_privacy_policy_page_explains_project_data_use(): void
     {
         $this->get(route('privacy'))

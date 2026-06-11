@@ -50,6 +50,8 @@ This pass corrected the homepage hexagon background implementation: the supplied
 
 This pass increased the homepage hexagon JPG layer opacity from `0.07` to `0.4` in `body:has(.homepage-gradient-bg)::before`, matching the tested visual direction while keeping the gradient overlay, fixed full-viewport layer and reduced-motion handling intact.
 
+This pass added an existing-user prompt below the create-account form: `Already have an account? Sign in here.`, linking to the named `login` route without changing registration or login behaviour.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -226,6 +228,12 @@ Homepage hexagon opacity pass checks:
 - `git diff --check` passed.
 - `php artisan test tests/Feature/PublicPolicyPagesTest.php` passed: 5 tests, 81 assertions.
 - Browser render audit at `http://127.0.0.1:8001/` confirmed the hexagon layer uses the JPG asset at `opacity: 0.4`, sits fixed behind the page, has no horizontal overflow at 1280px or 390px widths, keeps nav links clickable and preserves reduced-motion animation disabling.
+
+Register page sign-in prompt pass checks:
+
+- `npm run build` passed.
+- `php artisan test` passed: 101 tests, 650 assertions.
+- Browser render audit at `http://127.0.0.1:8001/register` confirmed the new existing-account prompt appears on desktop and mobile, has no horizontal overflow at 1280px or 390px widths and links to `/login`.
 
 Navigation logo pass checks:
 
