@@ -12,8 +12,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class SweepstakeDrawController extends Controller
 {
@@ -38,12 +40,12 @@ class SweepstakeDrawController extends Controller
             ]);
         }
 
-        $this->sendResultEmails($this->activeDraw($sweepstake));
+        $emailWarning = $this->sendResultEmailsSafely($this->activeDraw($sweepstake));
 
         return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')
-            ->with('status', $sweepstake->pot_mode === Sweepstake::POT_MODE_CUSTOM
+            ->with('status', $emailWarning ?? ($sweepstake->pot_mode === Sweepstake::POT_MODE_CUSTOM
                 ? 'Custom pot draw completed. Entrants with email addresses have been notified.'
-                : 'Ranked pot draw completed. Entrants with email addresses have been notified.');
+                : 'Ranked pot draw completed. Entrants with email addresses have been notified.'));
     }
 
     public function rerun(Request $request, Sweepstake $sweepstake, RunRankedPotDraw $draw): RedirectResponse
@@ -85,10 +87,10 @@ class SweepstakeDrawController extends Controller
             ]);
         }
 
-        $this->sendResultEmails($this->activeDraw($sweepstake));
+        $emailWarning = $this->sendResultEmailsSafely($this->activeDraw($sweepstake));
 
         return $this->redirectToSweepstakeTab($request, $sweepstake, 'draw-results')
-            ->with('status', 'Draw re-run completed. Entrants with email addresses have been notified.');
+            ->with('status', $emailWarning ?? 'Draw re-run completed. Entrants with email addresses have been notified.');
     }
 
     public function cancel(Request $request, Sweepstake $sweepstake): RedirectResponse
@@ -181,6 +183,23 @@ class SweepstakeDrawController extends Controller
                         ->values(),
                 ));
             });
+    }
+
+    private function sendResultEmailsSafely(SweepstakeDraw $draw): ?string
+    {
+        try {
+            $this->sendResultEmails($draw);
+
+            return null;
+        } catch (Throwable $exception) {
+            Log::error('Draw result emails failed after the draw was saved.', [
+                'sweepstake_id' => $draw->sweepstake_id,
+                'sweepstake_draw_id' => $draw->id,
+                'exception' => $exception,
+            ]);
+
+            return 'Draw completed, but result emails could not be sent. Check the mail configuration before notifying entrants.';
+        }
     }
 
     private function sendCancellationEmails(SweepstakeDraw $draw): void

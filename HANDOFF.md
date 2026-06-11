@@ -60,6 +60,8 @@ This pass updated the public support contact fallback from `hello@example.com` t
 
 This pass fixed the failed server `php artisan migrate:fresh --seed` run in `2026_06_07_000007_create_sweepstake_draws_and_version_assignments.php`. MySQL was using the original `team_assignments_sweepstake_member_id_team_id_unique` key to support the `sweepstake_member_id` foreign key, so dropping that unique key failed with error 1553. The migration now adds an explicit `team_assignments_sweepstake_member_id_index` before dropping the old unique key, and removes that helper index again in `down()` after restoring the original unique key.
 
+This pass fixed the production `Mailer [mailgun] is not defined` error by adding a `mailgun` mailer entry to `config/mail.php` while keeping the default mailer controlled by `MAIL_MAILER`. Result email sending after saved first draws/re-runs is now wrapped so Mailgun or transport failures are logged and redirect back with a warning status instead of turning a completed draw into a 500 response.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -397,6 +399,13 @@ Team assignment migration index fix checks:
 - `php artisan test` passed: 101 tests, 665 assertions.
 - `git diff --check` passed.
 - Server retry notes: after pulling this commit, run `php artisan optimize:clear` before retrying `php artisan migrate:fresh --seed --force` on the pre-launch server database. This destructive retry is only acceptable because the database has already been intentionally wiped before launch; once live users exist, do not use `migrate:fresh`.
+
+Mailgun mailer configuration pass checks:
+
+- `php artisan test tests/Feature/SweepstakeDrawNotificationTest.php` passed: 6 tests, 29 assertions.
+- `php artisan test` passed: 103 tests, 671 assertions.
+- `git diff --check` passed.
+- Server retry notes: after pulling this commit, run `php artisan optimize:clear` so production reloads the updated mailer configuration before using `MAIL_MAILER=mailgun`.
 
 ## Known Issues Or Blockers
 

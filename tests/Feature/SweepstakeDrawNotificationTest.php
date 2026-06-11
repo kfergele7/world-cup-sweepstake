@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use RuntimeException;
 use Tests\TestCase;
 
 class SweepstakeDrawNotificationTest extends TestCase
@@ -60,6 +61,35 @@ class SweepstakeDrawNotificationTest extends TestCase
                 && ! str_contains($html, 'cara-token')
                 && ! str_contains($html, 'no-email-token');
         });
+    }
+
+    public function test_draw_redirects_with_warning_when_result_email_sending_fails_after_save(): void
+    {
+        Mail::shouldReceive('to')
+            ->once()
+            ->andThrow(new RuntimeException('Mailgun unavailable'));
+
+        $admin = $this->createUser('admin@example.test');
+        $sweepstake = $this->createSweepstake($admin, teamCount: 4);
+        $this->createMember($sweepstake, 'Alice Adams', 'alice@example.test', 'alice-token');
+        $this->createMember($sweepstake, 'Bob Brown', 'bob@example.test', 'bob-token');
+
+        $this->actingAs($admin)
+            ->post(route('sweepstakes.draw.store', $sweepstake))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'Draw completed, but result emails could not be sent. Check the mail configuration before notifying entrants.');
+
+        $activeDraw = SweepstakeDraw::where('sweepstake_id', $sweepstake->id)
+            ->where('status', SweepstakeDraw::STATUS_ACTIVE)
+            ->firstOrFail();
+
+        $this->assertSame(4, TeamAssignment::where('sweepstake_draw_id', $activeDraw->id)->count());
+    }
+
+    public function test_mailgun_mailer_is_configured_for_mailgun_transport(): void
+    {
+        $this->assertSame('mailgun', config('mail.mailers.mailgun.transport'));
     }
 
     public function test_admin_can_rerun_draw_with_required_reason_and_send_updated_emails(): void
