@@ -56,6 +56,8 @@ This pass polished auth-page copy: the register flow now uses public-facing `org
 
 This pass clarified the sweepstake detail header share controls: the old `Join code` pill was replaced with a compact `Share this link with entrants` join-link panel, the full join URL is displayed with truncation, `Copy link` still uses the existing copy helper and `Open join page` is now `Preview join page`.
 
+This pass updated the public support contact fallback from `hello@example.com` to `kyle@elementseven.co`, so `/feedback` and the Privacy Policy support mailto link show the real beta contact address when `SUPPORT_EMAIL` is not otherwise set.
+
 ## Files And Areas Touched
 
 - Laravel app scaffold and dependency files: `composer.json`, `composer.lock`, `package.json`, `package-lock.json`, `vite.config.js`.
@@ -252,6 +254,12 @@ Sweepstake join-link controls pass checks:
 - `php artisan test` passed: 101 tests, 662 assertions.
 - `php artisan route:list` passed and shows 36 routes.
 - Browser render audit at `http://127.0.0.1:8001/sweepstakes/10` confirmed the new share label, full join URL display, `Copy link` value, `Preview join page` target, no header `Join code`/`Open join page` wording and no horizontal overflow at 1280px or 390px widths. The in-app Browser does not expose a virtual clipboard, so direct clipboard-content reading was unavailable; the rendered `data-copy-value` and existing copy helper wiring were verified.
+
+Public contact email pass checks:
+
+- `npm run build` passed.
+- `php artisan test` passed: 101 tests, 665 assertions.
+- Browser/render checks confirmed `/feedback` and `/privacy` show `kyle@elementseven.co` and `mailto:kyle@elementseven.co`; `/terms` continues to render without a direct support email because it links through `/feedback`.
 
 Navigation logo pass checks:
 

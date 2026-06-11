@@ -136,14 +136,17 @@ class PublicPolicyPagesTest extends TestCase
 
     public function test_feedback_page_renders_public_support_details_safely(): void
     {
-        config(['support.email' => 'support@example.test']);
-
         $this->get(route('feedback'))
             ->assertOk()
             ->assertSee('Send feedback')
             ->assertSee('Found a bug or have feedback?')
-            ->assertSee('support@example.test')
-            ->assertSee('mailto:support@example.test', false)
+            ->assertSee('kyle@elementseven.co')
+            ->assertSee('mailto:kyle@elementseven.co', false)
             ->assertSee('Do not send passwords, payment details');
+
+        $this->get(route('privacy'))
+            ->assertOk()
+            ->assertSee('kyle@elementseven.co')
+            ->assertSee('mailto:kyle@elementseven.co', false);
     }
 }

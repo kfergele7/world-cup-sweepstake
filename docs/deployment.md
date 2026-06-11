@@ -142,7 +142,7 @@ MAILGUN_DOMAIN=mg.sweepkit.example.com
 MAILGUN_SECRET=MAILGUN_SECRET_PLACEHOLDER
 MAILGUN_ENDPOINT=api.eu.mailgun.net
 
-SUPPORT_EMAIL=hello@example.com
+SUPPORT_EMAIL=kyle@elementseven.co
 VITE_APP_NAME="${APP_NAME}"
 ```
 
