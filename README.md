@@ -1,6 +1,6 @@
 # SweepKit
 
-Laravel and Vue app for running private football sweepstakes with fair auto-pot or custom-pot draws for entrant and organisers.
+Laravel and Vue app for running private football sweepstakes with fair auto-pot or custom-pot draws.
 
 ## Stack
 
